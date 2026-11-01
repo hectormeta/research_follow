@@ -11,14 +11,15 @@ Journal abstracts are used only as model input and are NOT written to data.json
 
 usage: python scripts/update.py            (run from the repository root)
 """
-import os, sys, json, re, time, datetime as dt, urllib.request, urllib.parse
+import os, sys, json, re, time, datetime as dt, urllib.request, urllib.parse, urllib.error
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 cfg = json.loads((ROOT / 'config.json').read_text(encoding='utf-8'))
-UA = {'User-Agent': 'nano-radar/1.0 (+https://github.com; literature tracker)'}
+CONTACT = cfg.get('contact_email', 'hectormeta@users.noreply.github.com')
+UA = {'User-Agent': f'nano-radar/1.0 (https://github.com/hectormeta/research_follow; mailto:{CONTACT})'}
 NOW = dt.datetime.now(dt.timezone.utc)
 NOW_MS = int(NOW.timestamp() * 1000)
 WINDOW = int(cfg.get('window_days', 31))
@@ -39,16 +40,22 @@ def rule_topics(text):
     return prim
 
 
-def get(url, timeout=60, data=None, headers=None):
+def get(url, timeout=60, data=None, headers=None, tries=5):
     err = None
-    for i in range(3):
+    for i in range(tries):
         try:
             req = urllib.request.Request(url, data=data, headers={**UA, **(headers or {})})
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return r.read().decode('utf-8', 'replace')
+        except urllib.error.HTTPError as e:
+            err = e
+            if e.code not in (429, 500, 502, 503, 504):
+                raise
+            ra = e.headers.get('Retry-After') if e.headers else None
+            time.sleep(min(120, float(ra)) if ra and ra.replace('.', '').isdigit() else 8 * (i + 1))
         except Exception as e:
             err = e
-            time.sleep(3 + 5 * i)
+            time.sleep(5 * (i + 1))
     raise err
 
 
@@ -90,7 +97,7 @@ def fetch_crossref(s):
     frm = (NOW - dt.timedelta(days=WINDOW)).date().isoformat()
     url = ('https://api.crossref.org/works?'
            + f'filter=issn:{s["issn"]},from-created-date:{frm},type:journal-article&sort=created&order=desc&rows=1000'
-           + '&select=DOI,title,author,created,abstract,URL')
+           + '&select=DOI,title,author,created,abstract,URL&mailto=' + urllib.parse.quote(CONTACT))
     items = json.loads(get(url, 150))['message']['items']
     out = []
     for it in items:
@@ -150,12 +157,16 @@ def summarize(batch):
 
 def main():
     results, meta = [], {}
-    with ThreadPoolExecutor(6) as ex:
-        for sid, lst, err in ex.map(job, cfg['sources']):
-            lst = [p for p in lst if BROAD.search(p['title'] + ' ' + p['abs'])]
-            meta[sid] = {'n': len(lst), 'err': err}
-            results += lst
-            print(f'{sid:10s} {len(lst):4d} {err or ""}', flush=True)
+    # arXiv in its own thread; Crossref two at a time to stay under rate limits
+    srcs = cfg['sources']
+    with ThreadPoolExecutor(1) as ax_pool, ThreadPoolExecutor(2) as cr_pool:
+        futs = [(ax_pool if s['id'] == 'arxiv' else cr_pool).submit(job, s) for s in srcs]
+        outs = [f.result() for f in futs]
+    for sid, lst, err in outs:
+        lst = [p for p in lst if BROAD.search(p['title'] + ' ' + p.get('abs', ''))]
+        meta[sid] = {'n': len(lst), 'err': err}
+        results += lst
+        print(f'{sid:10s} {len(lst):4d} {err or ""}', flush=True)
 
     prev_path = ROOT / 'data.json'
     prev = json.loads(prev_path.read_text(encoding='utf-8')) if prev_path.exists() else {}
@@ -211,9 +222,9 @@ def main():
                 q[k] = p[k]
         a = p.get('authors', [])
         q['authors'] = a[:8] + ([f'+{len(a) - 8}'] if len(a) > 8 else [])
-        if p['src'] == 'arxiv':
+        if p['src'] == 'arxiv' and p.get('abs'):
             q['abs'] = p['abs'][:1600]
-        q['rt'] = rule_topics(p['title'] + ' ' + p['abs'])  # keyword tags, computed here so journal abstracts stay private
+        q['rt'] = p['rt'] if 'abs' not in p and 'rt' in p else rule_topics(p['title'] + ' ' + p.get('abs', ''))  # keyword tags, computed here so journal abstracts stay private
         s = cache.get(p['key'])
         if s:
             q.update({'zh': s['zh'], 'tp': s['tp'], 'rel': s['rel']})
