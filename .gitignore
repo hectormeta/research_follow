@@ -1,3 +1,6 @@
 __pycache__/
 _site/
+.cache/
+todo*.json
+sum_*.json
 .DS_Store

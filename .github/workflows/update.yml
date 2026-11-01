@@ -1,12 +1,16 @@
 name: Update papers
 
+# Daily data is normally pushed by a local Cowork task (~08:30 Beijing) together with
+# Chinese summaries. This workflow:
+#   - on every push to main: just publishes the site;
+#   - at 11:30 Beijing: backup fetch, only if data.json is older than 20 h;
+#   - on manual run: fetch now.
 on:
-  schedule:
-    - cron: '30 0 * * *'   # 00:30 UTC = 08:30 Beijing time
-  workflow_dispatch: {}
   push:
     branches: [main]
-    paths-ignore: ['data.json', 'summaries.json']
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -27,22 +31,28 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
+        if: github.event_name != 'push'
         with:
           python-version: '3.12'
 
-      - name: Fetch papers and write Chinese summaries
+      - name: Fetch papers (backup)
+        if: github.event_name != 'push'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
-        run: python scripts/update.py
+        run: python scripts/update.py ${{ github.event_name == 'schedule' && '--if-stale 20' || '' }}
 
       - name: Commit data
+        if: github.event_name != 'push'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data.json summaries.json
-          git diff --cached --quiet || git commit -m "Update papers $(date -u +%F)"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Update papers $(date -u +%F) (Actions backup)"
+            git pull --rebase -X theirs origin main || true
+            git push
+          fi
 
       - name: Prepare site
         run: |
