@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>微纳光学新文献</title>
+<meta name="description" content="每天汇总超表面、超材料、拓扑光学、光场调控与微纳光学方向的 arXiv 预印本和期刊论文，附中文一句话要点。">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F2F5F6;
+  --paper:#FFFFFF;
+  --ink:#16202C;
+  --ink2:#45515E;
+  --ink3:#7A8794;
+  --rule:#D9E0E4;
+  --focus:#2F6BD8;
+  --serif:"Iowan Old Style","Charter","Source Han Serif SC","Songti SC","Noto Serif CJK SC",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+.wrap{max-width:980px;margin:0 auto;padding:28px 22px 80px}
+
+/* header */
+header h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;margin:0;letter-spacing:-.01em}
+header .sub{margin:6px 0 0;color:var(--ink2);font-size:14px}
+header .sub b{font-weight:600;color:var(--ink)}
+.status{margin-top:4px;color:var(--ink3);font-size:13px;min-height:20px}
+.status .err{color:#B3261E}
+
+/* spectrum — the signature element */
+.spectrum{margin:22px 0 0;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:14px 16px 10px}
+.spec-svg{display:block;width:100%;height:78px;background:linear-gradient(180deg,#FAFBFC,#F1F4F6);border-radius:6px;cursor:crosshair}
+.spec-svg rect{transition:opacity .15s}
+.spec-axis{display:flex;justify-content:space-between;color:var(--ink3);font-size:12px;margin-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 6px;margin-top:12px}
+.lg{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);background:var(--paper);border-radius:999px;padding:4px 11px 4px 9px;cursor:pointer;font-size:13.5px}
+.lg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.lg .n{color:var(--ink3);font-variant-numeric:tabular-nums}
+.lg[aria-pressed="true"]{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);background:color-mix(in srgb,var(--c) 9%,#fff)}
+.legend .hint{font-size:12.5px;color:var(--ink3);align-self:center;margin-left:4px}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:18px 0 6px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;background:none;padding:5px 12px;cursor:pointer;font-size:13.5px;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.search{flex:1 1 200px;min-width:160px;border:1px solid var(--rule);border-radius:8px;padding:5px 11px;background:var(--paper);font-size:14px}
+.btn{border:1px solid var(--rule);background:var(--paper);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13.5px;color:var(--ink2)}
+.btn:hover{border-color:#B9C4CB}
+.srcpanel{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;margin:8px 0 4px;display:none}
+.srcpanel.open{display:block}
+.srcgroup{margin-bottom:10px}
+.srcgroup h4{margin:0 0 4px;font-size:13px;font-weight:600;color:var(--ink2)}
+.srcgroup label{display:inline-flex;align-items:center;gap:6px;margin:2px 14px 2px 0;font-size:13.5px;cursor:pointer}
+.srcgroup label .n{color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums}
+.srcgroup label .bad{color:#B3261E;font-size:12px}
+.srcpanel .foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+/* list */
+.listhead{display:flex;justify-content:space-between;align-items:baseline;color:var(--ink3);font-size:13px;margin:16px 0 4px;gap:10px;flex-wrap:wrap}
+.listhead button{border:0;background:none;color:var(--focus);cursor:pointer;padding:0;font-size:13px}
+.day{font-family:var(--serif);font-size:15px;color:var(--ink2);margin:22px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+.item{display:grid;grid-template-columns:4px 1fr auto;gap:0 14px;padding:14px 0 14px;border-bottom:1px solid #E6EBEE}
+.item.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{background:#FFF6D6}100%{background:transparent}}
+.lines{display:flex;flex-direction:column;gap:2px;border-radius:2px;overflow:hidden;min-height:40px}
+.lines span{flex:1}
+.item .t{font-family:var(--serif);font-weight:600;font-size:17.5px;line-height:1.32;margin:0}
+.item .t a{color:inherit;text-decoration:none}
+.item .t a:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.zh{margin:6px 0 0;color:var(--ink);font-size:14.5px;max-width:72ch}
+.zh.pending{color:var(--ink3)}
+.meta{margin-top:6px;color:var(--ink3);font-size:13px;display:flex;flex-wrap:wrap;gap:2px 12px}
+.meta .src{color:var(--ink2);font-style:italic;font-family:var(--serif)}
+.meta .src.ax{font-style:normal;font-family:var(--sans);font-weight:600;color:#9B2C2C}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.chip{border:0;background:color-mix(in srgb,var(--c) 11%,#fff);color:color-mix(in srgb,var(--c) 80%,#000);border-radius:4px;padding:1px 8px;font-size:12.5px;cursor:pointer}
+.abs{margin-top:10px;color:var(--ink2);font-size:14px;max-width:76ch;display:none;font-family:var(--serif);line-height:1.62}
+.abs.open{display:block}
+.abs .links{font-family:var(--sans);font-size:13px;margin-top:6px;display:flex;gap:14px}
+.abs a{color:var(--focus)}
+.acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.acts button{border:1px solid var(--rule);background:var(--paper);border-radius:7px;padding:3px 9px;font-size:12.5px;cursor:pointer;color:var(--ink2);white-space:nowrap}
+.acts .star[aria-pressed="true"]{background:#FFF4CC;border-color:#E2C04A;color:#7A5A00}
+.item.read .t,.item.read .zh{color:var(--ink3)}
+.item.read .lines{opacity:.35}
+.empty{padding:40px 0;color:var(--ink2);text-align:center}
+.more{display:block;margin:20px auto 0}
+.foot{margin-top:48px;padding-top:14px;border-top:1px solid var(--rule);color:var(--ink3);font-size:13px;max-width:72ch}
+.foot p{margin:0 0 6px}
+.foot a{color:var(--ink2)}
+@media (max-width:620px){
+  .wrap{padding:20px 14px 60px}
+  header h1{font-size:25px}
+  .item{grid-template-columns:4px 1fr}
+  .acts{grid-column:2;flex-direction:row;margin-top:8px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>微纳光学新文献</h1>
+    <p class="sub" id="sub">正在读取 arXiv 与 24 种期刊的新论文</p>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </header>
+
+  <section class="spectrum" aria-label="论文时间分布">
+    <svg class="spec-svg" id="spec" viewBox="0 0 1000 78" preserveAspectRatio="none" role="img" aria-label="每条竖线是一篇论文，按发表时间排列，颜色表示主题"></svg>
+    <div class="spec-axis" id="axis"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <div class="controls">
+    <div class="seg" id="segDays" aria-label="时间范围">
+      <button data-v="3">3 天</button><button data-v="7">7 天</button><button data-v="14">14 天</button><button data-v="30">30 天</button>
+    </div>
+    <div class="seg" id="segStatus" aria-label="阅读状态">
+      <button data-v="all">全部</button><button data-v="unread">未读</button><button data-v="star">收藏</button>
+    </div>
+    <input class="search" id="q" type="search" placeholder="搜索标题、中文要点、作者">
+    <button class="btn" id="srcBtn" aria-expanded="false">来源</button>
+  </div>
+  <div class="srcpanel" id="srcpanel"></div>
+
+  <div class="listhead"><span id="count"></span><span><button id="markAll">把当前列表标为已读</button></span></div>
+  <main id="list"></main>
+  <footer class="foot">
+    <p>覆盖超表面、超材料、拓扑光学、光场调控与微纳光学方向。论文元数据来自 <a href="https://info.arxiv.org/help/api/index.html">arXiv API</a> 与 <a href="https://www.crossref.org/">Crossref</a>，每天自动抓取近 31 天的新文章。</p>
+    <p>中文要点和主题标签由 Claude 自动生成，可能有误，请以原文为准。收藏和已读记录只保存在你自己的浏览器里。</p>
+  </footer>
+</div>
+
+<script>
+(async () => {
+'use strict';
+const NOW = Date.now();
+const DAY = 864e5;
+const LS = { state:'nanoradar.v1.state', ai:'nanoradar.v1.ai', prefs:'nanoradar.v1.prefs' };
+
+let CONFIG = { sources:[], topics:[], context:'x' }, DATA = {};
+try {
+  const [c, d] = await Promise.all(['config.json', 'data.json'].map(u => fetch(u, { cache:'no-cache' }).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })));
+  CONFIG = c; DATA = d;
+} catch (err) { DATA = { loadError: String(err.message || err) }; }
+const CTX = new RegExp(CONFIG.context, 'i');
+const TOPICS = CONFIG.topics.map(t => Object.assign({}, t, { re: new RegExp(t.re, 'i') }));
+const TMAP = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+const NAME2ID = Object.fromEntries(TOPICS.map(t => [t.name, t.id]));
+
+const SOURCES = CONFIG.sources;
+const SMAP = Object.fromEntries(SOURCES.map(s => [s.id, s]));
+
+/* ---------- storage ---------- */
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const state = load(LS.state, { star:{}, read:{} });   // star: key -> paper snapshot
+const HAS_AI = !!(window.cowork && window.cowork.askClaude);
+const ai = HAS_AI ? load(LS.ai, {}) : {};               // key -> {zh, tp, rel}
+const prefs = Object.assign({ days:7, status:'all', topics:[], off:['ol','adma'], q:'', showHidden:false }, load(LS.prefs, {}));
+const persist = () => { save(LS.state, state); save(LS.prefs, prefs); };
+function pruneAI(){
+  const ks = Object.keys(ai);
+  if (ks.length > 2500) { ks.sort((a,b)=>(ai[a].t||0)-(ai[b].t||0)).slice(0, ks.length-2000).forEach(k => { if(!state.star[k]) delete ai[k]; }); }
+  if (HAS_AI) save(LS.ai, ai);
+}
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clean = s => String(s ?? '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+const normTitle = s => clean(s).toLowerCase().replace(/[^a-z0-9]+/g,'');
+const fmtDate = ts => { const d = new Date(ts); return `${d.getMonth()+1} 月 ${d.getDate()} 日`; };
+const isoDay = ts => new Date(ts - new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const authorsShort = a => {
+  if (!a.length) return '';
+  const extra = /^\+\d+$/.test(a[a.length-1]) ? +a[a.length-1].slice(1) : 0;
+  const names = extra ? a.slice(0, -1) : a; const total = names.length + extra;
+  return total <= 3 ? names.join(', ') : `${names.slice(0,3).join(', ')} 等 ${total} 人`;
+};
+
+function ruleTopics(text){
+  const ctx = CTX.test(text);
+  const prim = TOPICS.filter(t => !t.secondary && t.re.test(text) && (!t.ctx || ctx)).map(t => t.id);
+  if (prim.length && TMAP.ai.re.test(text)) prim.push('ai');
+  return prim;
+}
+
+/* ---------- data store ---------- */
+const papers = new Map();      // key -> paper
+const titleIdx = new Map();    // normalized title -> key
+const srcInfo = Object.fromEntries(SOURCES.map(s => [s.id, { n:0, err:null, done:false }]));
+function addPapers(list){
+  for (const p of list) {
+    const nt = normTitle(p.title);
+    const dupKey = titleIdx.get(nt);
+    if (dupKey && dupKey !== p.key) {
+      const old = papers.get(dupKey);
+      // prefer the journal version, keep arXiv link
+      if (old && old.src === 'arxiv' && p.src !== 'arxiv') { p.pdf = old.pdf; p.arxiv = old.url; papers.delete(dupKey); }
+      else { if (old && p.src === 'arxiv') { old.pdf = p.pdf; old.arxiv = p.url; } continue; }
+    }
+    if (!Array.isArray(p.rt)) p.rt = ruleTopics(p.title + ' ' + p.abs);
+    if (p.zh && !ai[p.key]) ai[p.key] = { zh:p.zh, tp:p.tp || [], rel:p.rel };
+    papers.set(p.key, p); titleIdx.set(nt, p.key);
+  }
+}
+const topicsOf = p => { const a = ai[p.key]; if (a?.tp?.length) return a.tp; return p.rt; };
+const isRelevant = p => { const a = ai[p.key]; if (a && typeof a.rel === 'number') return a.rel > 0; return p.rt.length > 0; };
+
+/* ---------- AI summaries ---------- */
+const PROMPT = '你是微纳光学领域的研究助理。输入是一个 JSON 数组，每项含 k（键）、t（标题）、a（摘要，可能为空）。' +
+ '对每一项输出：zh = 一句中文要点，不超过 60 字，说清楚做了什么和关键结果或数值，专业缩写保留英文（如 BIC、OAM、Q 值）；摘要为空时依据标题概括，不要编造数值。' +
+ 'tp = 主题标签数组，只能取自 ["超表面","超材料","拓扑光学","光场调控","微纳光学","智能设计"]，其中“拓扑光学”含非厄米与奇异点，“光场调控”含涡旋、OAM、偏振与波前调控、结构光，“微纳光学”含等离激元、Mie 共振、光子晶体、BIC、极化激元，“智能设计”指逆向设计或 AI 方法。' +
+ 'rel = 与微纳光学、超表面、超材料、拓扑光学、光场调控这一研究方向的相关度，0 表示无关（如电子或磁性拓扑、无线通信算法、纯生物化学），1 表示部分相关，2 表示核心相关。' +
+ '只输出 JSON 数组，形如 [{"k":"...","zh":"...","tp":["..."],"rel":2}]，不要输出任何其他文字。';
+let aiTotal = 0, aiDone = 0, aiRunning = false, aiOk = 0, aiErr = '';
+async function runAI(){
+  if (!HAS_AI || aiRunning) return; aiRunning = true;
+  try {
+    const queue = [...papers.values()].filter(p => p.rt.length && !ai[p.key] && NOW - p.ts < 31*DAY && !prefs.off.includes(p.src)).sort((a,b) => b.ts - a.ts);
+    aiTotal = queue.length; aiDone = 0;
+    const batches = []; for (let i = 0; i < queue.length; i += 12) batches.push(queue.slice(i, i+12));
+    let bi = 0;
+    const worker = async () => {
+      while (bi < batches.length) {
+        const b = batches[bi++];
+        const data = b.map(p => ({ k:p.key, t:p.title, a:p.abs.slice(0, 900) }));
+        try {
+          const r = await window.cowork.askClaude(PROMPT, [JSON.stringify(data)]);
+          if (r.isError) aiErr = String(r.text || r.error || '模型调用失败').slice(0, 120);
+          else {
+            const txt = r.text || ''; const s = txt.indexOf('['), e = txt.lastIndexOf(']');
+            const arr = JSON.parse(txt.slice(s, e+1));
+            for (const o of arr) {
+              if (!o || !papers.has(o.k)) continue;
+              aiOk++;
+              ai[o.k] = { zh:String(o.zh||'').trim(), tp:(o.tp||[]).map(n => NAME2ID[n]).filter(Boolean), rel:Number.isFinite(+o.rel) ? +o.rel : 1, t:Date.now() };
+            }
+          }
+        } catch (err) { aiErr = String(err?.message || err).slice(0, 120); console.warn('askClaude batch failed', err); }
+        aiDone += b.length; pruneAI(); schedule();
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+  } finally { aiRunning = false; schedule(); }
+}
+
+/* ---------- filtering ---------- */
+function view(){
+  const cutoff = NOW - prefs.days*DAY;
+  const q = prefs.q.trim().toLowerCase();
+  const off = new Set(prefs.off);
+  let base = [...papers.values()];
+  // starred items stay visible even after leaving the fetch window
+  for (const [k, snap] of Object.entries(state.star)) if (!papers.has(k) && snap && typeof snap === 'object') base.push(Object.assign({ rt:[] }, snap, { key:k }));
+  const inScope = base.filter(p => !off.has(p.src) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
+  const rel = inScope.filter(p => isRelevant(p) || state.star[p.key]);
+  const hidden = inScope.length - rel.length;
+  let pool = prefs.showHidden ? inScope : rel;
+  if (prefs.status === 'unread') pool = pool.filter(p => !state.read[p.key]);
+  if (q) pool = pool.filter(p => (p.title+' '+p.abs+' '+p.authors.join(' ')+' '+(ai[p.key]?.zh||'')).toLowerCase().includes(q));
+  const topicCounts = Object.fromEntries(TOPICS.map(t => [t.id, 0]));
+  for (const p of pool) for (const t of new Set(topicsOf(p))) if (topicCounts[t] !== undefined) topicCounts[t]++;
+  const sel = prefs.topics;
+  const shown = sel.length ? pool.filter(p => topicsOf(p).some(t => sel.includes(t))) : pool;
+  shown.sort((a,b) => b.ts - a.ts);
+  return { pool, shown, hidden, topicCounts };
+}
+
+/* ---------- render ---------- */
+let raf = 0, limit = 60;
+const schedule = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+
+function renderSpectrum(v){
+  const svg = $('#spec');
+  const span = prefs.status === 'star' ? Math.max(prefs.days, Math.ceil((NOW - Math.min(NOW, ...v.pool.map(p => p.ts))) / DAY)) : prefs.days;
+  const start = NOW - span*DAY;
+  const sel = prefs.topics;
+  let h = '';
+  // day grid
+  for (let d = 1; d < span; d++) { const x = (d/span)*1000; h += `<rect x="${x.toFixed(1)}" y="0" width="0.6" height="78" fill="#E3E8EB"/>`; }
+  const items = [...v.pool].sort((a,b) => a.ts - b.ts);
+  for (const p of items) {
+    const tps = topicsOf(p);
+    const tid = (sel.length ? tps.find(t => sel.includes(t)) : null) || tps.find(t => t !== 'ai') || tps[0];
+    const on = !sel.length || tps.some(t => sel.includes(t));
+    const col = on && tid ? TMAP[tid].color : '#C3CBD1';
+    const x = Math.max(0, Math.min(998, ((p.ts - start)/(span*DAY))*1000));
+    const hgt = state.star[p.key] ? 74 : (p.src === 'arxiv' ? 46 : 60);
+    const op = state.read[p.key] ? 0.28 : (on ? 0.9 : 0.5);
+    h += `<rect data-k="${esc(p.key)}" x="${x.toFixed(1)}" y="${78-hgt}" width="2.2" height="${hgt}" fill="${col}" opacity="${op}"><title>${esc(p.journal)}：${esc(p.title)}</title></rect>`;
+  }
+  svg.innerHTML = h;
+  const mid = start + span*DAY/2;
+  $('#axis').innerHTML = `<span>${fmtDate(start)}</span><span>${fmtDate(mid)}</span><span>今天</span>`;
+}
+
+function renderLegend(v){
+  const sel = prefs.topics;
+  $('#legend').innerHTML = TOPICS.map(t => `<button class="lg" style="--c:${t.color}" data-t="${t.id}" aria-pressed="${sel.includes(t.id)}"><i style="background:${t.color}"></i>${t.name}<span class="n">${v.topicCounts[t.id]}</span></button>`).join('') +
+    `<span class="hint">${sel.length ? '<button class="lg" data-t="__clear">清除主题筛选</button>' : '点击主题筛选，可多选；竖线越高表示期刊论文，收藏的最高'}</span>`;
+}
+
+function renderSources(){
+  const groups = {};
+  for (const s of SOURCES) (groups[s.group] ||= []).push(s);
+  const off = new Set(prefs.off);
+  $('#srcpanel').innerHTML = Object.entries(groups).map(([g, list]) => `<div class="srcgroup"><h4>${g}</h4>${list.map(s => {
+    const inf = srcInfo[s.id];
+    const tail = inf.err ? `<span class="bad" title="${esc(inf.err)}">获取失败</span>` : (inf.done ? `<span class="n">${inf.n}</span>` : '<span class="n">…</span>');
+    return `<label><input type="checkbox" data-s="${s.id}" ${off.has(s.id)?'':'checked'}>${esc(s.name)} ${tail}</label>`;
+  }).join('')}</div>`).join('') +
+  `<div class="foot"><button class="btn" data-sa="all">全选</button><button class="btn" data-sa="core">只看光学专刊</button><button class="btn" data-sa="hidden">${prefs.showHidden ? '隐藏' : '显示'}关键词判定为无关的论文</button></div>`;
+}
+
+function itemHTML(p){
+  const tps = topicsOf(p);
+  const a = ai[p.key];
+  const read = !!state.read[p.key], star = !!state.star[p.key];
+  const stripes = (tps.length ? tps : [null]).map(t => `<span style="background:${t ? TMAP[t].color : '#C3CBD1'}"></span>`).join('');
+  const zh = a?.zh ? `<p class="zh">${esc(a.zh)}</p>` : (p.rt.length && aiRunning ? '<p class="zh pending">正在生成中文要点</p>' : (p.rt.length ? '' : '<p class="zh pending">关键词未命中研究方向</p>'));
+  const src = p.src === 'arxiv' ? `<span class="src ax">arXiv${p.sub ? ' '+esc(p.sub) : ''}</span>` : `<span class="src">${esc(p.journal)}</span>`;
+  const links = [`<a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${p.src==='arxiv'?'arXiv 页面':'期刊页面'}</a>`];
+  if (p.pdf) links.push(`<a href="${esc(p.pdf)}" target="_blank" rel="noopener" data-open="1">PDF</a>`);
+  if (p.arxiv && p.src !== 'arxiv') links.push(`<a href="${esc(p.arxiv)}" target="_blank" rel="noopener" data-open="1">arXiv 版本</a>`);
+  return `<article class="item${read?' read':''}" id="i-${esc(p.key)}" data-k="${esc(p.key)}">
+    <div class="lines" aria-hidden="true">${stripes}</div>
+    <div class="body">
+      <h3 class="t"><a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${esc(p.title)}</a></h3>
+      ${zh}
+      <div class="meta">${src}<time>${fmtDate(p.ts)}</time><span class="au">${esc(authorsShort(p.authors))}</span></div>
+      ${tps.length ? `<div class="chips">${tps.map(t => `<button class="chip" style="--c:${TMAP[t].color}" data-t="${t}">${TMAP[t].name}</button>`).join('')}</div>` : ''}
+      <div class="abs">${p.abs ? esc(p.abs) : '<span style="font-family:var(--sans);color:var(--ink3)">期刊摘要请在原文页面查看。</span>'}<div class="links">${links.join('')}</div></div>
+    </div>
+    <div class="acts">
+      <button class="star" data-act="star" aria-pressed="${star}">${star ? '已收藏' : '收藏'}</button>
+      <button data-act="read">${read ? '标为未读' : '标为已读'}</button>
+      <button data-act="abs" aria-expanded="false">${p.abs ? '摘要' : '链接'}</button>
+    </div>
+  </article>`;
+}
+
+let openAbs = new Set();
+function render(){
+  const v = view();
+  renderSpectrum(v); renderLegend(v);
+  if ($('#srcpanel').classList.contains('open')) renderSources();
+  for (const b of document.querySelectorAll('#segDays button')) b.setAttribute('aria-pressed', String(+b.dataset.v === prefs.days));
+  for (const b of document.querySelectorAll('#segStatus button')) b.setAttribute('aria-pressed', String(b.dataset.v === prefs.status));
+  const unread = v.pool.filter(p => !state.read[p.key]).length;
+  $('#sub').innerHTML = prefs.status === 'star'
+    ? `收藏夹里有 <b>${v.pool.length}</b> 篇论文`
+    : `过去 ${prefs.days} 天有 <b>${v.pool.length}</b> 篇相关论文，其中 <b>${unread}</b> 篇未读`;
+  $('#count').textContent = `显示 ${Math.min(limit, v.shown.length)} / ${v.shown.length} 篇` + (v.hidden && !prefs.showHidden ? `，另有 ${v.hidden} 篇被判定为无关已隐藏` : '');
+  const list = $('#list');
+  updateStatus();
+  if (!v.shown.length) {
+    const loading = Object.values(srcInfo).some(s => !s.done);
+    list.innerHTML = `<div class="empty">${loading ? '正在获取论文…' : prefs.status === 'star' ? '还没有收藏。在任意论文右侧点“收藏”，它会一直留在这里。' : '当前筛选下没有论文。可以放宽时间范围、清除主题筛选或在“来源”中打开更多期刊。'}</div>`;
+    return;
+  }
+  let html = '', lastDay = '';
+  for (const p of v.shown.slice(0, limit)) {
+    const d = fmtDate(p.ts);
+    if (d !== lastDay) { html += `<h2 class="day">${d}</h2>`; lastDay = d; }
+    html += itemHTML(p);
+  }
+  if (v.shown.length > limit) html += `<button class="btn more" id="moreBtn">再显示 ${Math.min(60, v.shown.length - limit)} 篇</button>`;
+  list.innerHTML = html;
+  for (const k of openAbs) { const el = document.getElementById('i-'+k); if (el) { el.querySelector('.abs').classList.add('open'); el.querySelector('[data-act=abs]').setAttribute('aria-expanded','true'); el.querySelector('[data-act=abs]').textContent = '收起'; } }
+  updateStatus();
+}
+
+function updateStatus(){
+  const s = Object.values(srcInfo); const done = s.filter(x => x.done).length; const errs = SOURCES.filter(x => srcInfo[x.id].err);
+  const parts = [];
+  if (aiRunning && aiTotal) parts.push(`正在生成中文要点 ${Math.min(aiDone, aiTotal)} / ${aiTotal}`);
+  if (aiErr && !aiOk) parts.push(`<span class="err">中文要点生成失败：${esc(aiErr)}</span>`);
+  if (errs.length) parts.push(`<span class="err">${errs.length === s.length ? '还没有抓取数据：' + esc(srcInfo[errs[0].id].err) : errs.map(e => e.name).join('、') + ' 本次抓取失败，下次自动刷新时会重试'}</span>`);
+  if (DATA.generated) parts.unshift(`数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}，每天北京时间 8:30 自动更新`);
+  if (DATA.loadError) parts.push(`<span class="err">数据文件读取失败：${esc(DATA.loadError)}</span>`);
+  $('#status').innerHTML = parts.join('，');
+}
+
+/* ---------- interactions ---------- */
+const snapshot = p => ({ src:p.src, journal:p.journal, sub:p.sub, title:p.title, abs:p.abs, authors:p.authors, ts:p.ts, url:p.url, pdf:p.pdf, arxiv:p.arxiv, rt:p.rt });
+function findPaper(k){ return papers.get(k) || (state.star[k] && Object.assign({ key:k }, state.star[k])); }
+function markRead(k, v = true){ if (v) state.read[k] = 1; else delete state.read[k]; persist(); }
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, a, rect');
+  if (!t) return;
+  if (t.matches('.lg, .chip')) {
+    const id = t.dataset.t;
+    if (id === '__clear') prefs.topics = [];
+    else if (t.classList.contains('chip')) prefs.topics = [id];
+    else prefs.topics = prefs.topics.includes(id) ? prefs.topics.filter(x => x !== id) : [...prefs.topics, id];
+    limit = 60; persist(); render(); return;
+  }
+  if (t.closest('#segDays')) { prefs.days = +t.dataset.v; if (prefs.status === 'star') prefs.status = 'all'; limit = 60; persist(); render(); return; }
+  if (t.closest('#segStatus')) { prefs.status = t.dataset.v; limit = 60; persist(); render(); return; }
+  if (t.id === 'srcBtn') { const p = $('#srcpanel'); p.classList.toggle('open'); t.setAttribute('aria-expanded', String(p.classList.contains('open'))); renderSources(); return; }
+  if (t.dataset.sa) {
+    if (t.dataset.sa === 'all') prefs.off = [];
+    if (t.dataset.sa === 'core') prefs.off = SOURCES.filter(s => ['nature','science','sciadv','ncomms','nmat','nphys','acsnano','adma','prl','prx','ol'].includes(s.id)).map(s => s.id);
+    if (t.dataset.sa === 'hidden') prefs.showHidden = !prefs.showHidden;
+    persist(); renderSources(); render(); return;
+  }
+  if (t.id === 'moreBtn') { limit += 60; render(); return; }
+  if (t.id === 'markAll') { for (const p of view().shown.slice(0, limit)) state.read[p.key] = 1; persist(); render(); return; }
+  if (t.tagName.toLowerCase() === 'rect' && t.dataset.k) {
+    const el = document.getElementById('i-' + t.dataset.k);
+    if (el) { el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'center' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    return;
+  }
+  const item = t.closest('.item'); if (!item) return;
+  const k = item.dataset.k;
+  if (t.dataset.open) { markRead(k); setTimeout(schedule, 300); return; }
+  const act = t.dataset.act;
+  if (act === 'star') { if (state.star[k]) delete state.star[k]; else { const p = findPaper(k); state.star[k] = p ? snapshot(p) : 1; } persist(); render(); }
+  if (act === 'read') { markRead(k, !state.read[k]); render(); }
+  if (act === 'abs') {
+    const box = item.querySelector('.abs'); const open = box.classList.toggle('open');
+    t.setAttribute('aria-expanded', String(open)); t.textContent = open ? '收起' : (findPaper(k)?.abs ? '摘要' : '链接');
+    if (open) openAbs.add(k); else openAbs.delete(k);
+  }
+});
+document.addEventListener('change', e => {
+  const c = e.target; if (!c.dataset.s) return;
+  const off = new Set(prefs.off); if (c.checked) off.delete(c.dataset.s); else off.add(c.dataset.s);
+  prefs.off = [...off]; persist(); render();
+});
+let qT = 0;
+$('#q').value = prefs.q;
+$('#q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { prefs.q = e.target.value; limit = 60; persist(); render(); }, 160); });
+
+/* ---------- boot ---------- */
+async function boot(){
+  const src = DATA.sources || {};
+  for (const s of SOURCES) { const d = src[s.id] || {}; srcInfo[s.id] = { n:d.n || 0, err:d.err || (DATA.papers ? null : '数据文件为空'), done:true }; }
+  addPapers((DATA.papers || []).map(p => Object.assign({ abs:'', authors:[] }, p, { journal: SMAP[p.src]?.name || p.journal || p.src })));
+  // refresh star snapshots with fresh metadata
+  for (const k of Object.keys(state.star)) if (papers.has(k)) state.star[k] = snapshot(papers.get(k));
+  persist();
+  schedule();
+  runAI();
+}
+boot();
+})();
+</script>
+</body>
+</html>

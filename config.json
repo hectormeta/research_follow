@@ -1,0 +1,199 @@
+{
+ "window_days": 31,
+ "context": "photon|optic|light|laser|electromagnetic|terahertz|\\bthz\\b|microwave|polariton|plasmon|metasurface|metamaterial|acoustic|elastic wave|beam|infrared|visible|nanophotonic|waveguide|resonator|lens",
+ "topics": [
+  {
+   "id": "meta",
+   "name": "超表面",
+   "color": "#6B3FD4",
+   "re": "metasurface|meta-?lens|meta-?optic|metagrating|meta-?atom|flat optic|meta-?device|metafiber|meta-?hologra|metasystem"
+  },
+  {
+   "id": "mm",
+   "name": "超材料",
+   "color": "#2F6BD8",
+   "re": "metamaterial|hyperbolic (material|metamaterial|polariton|medi|disper)|epsilon-near-zero|\\bENZ\\b|negative[- ](refractive )?index|invisibility|cloak|time-varying (medi|metamaterial|photonic|system)|photonic time crystal|temporal (interface|boundar|reflection)|mechanical metamaterial"
+  },
+  {
+   "id": "topo",
+   "name": "拓扑光学",
+   "color": "#13926A",
+   "re": "topolog|non-hermitian|exceptional point|skin effect|valley[- ]hall|chern|quantum spin hall|floquet|synthetic dimension|berry (phase|curvature)|\\bPT[- ]symmetr|parity-time",
+   "ctx": true
+  },
+  {
+   "id": "sl",
+   "name": "光场调控",
+   "color": "#C08A00",
+   "re": "vortex|vortices|orbital angular momentum|\\bOAM\\b|structured (light|wave|beam|field)|vector (beam|vortex|field|vortices)|skyrmion|meron|polarization (control|manipulat|singular|structur|conver|state)|wavefront|beam (shaping|steering)|hologra|spin[- ]orbit|geometric phase|pancharatnam|airy beam|bessel beam|space-?time (wave|beam|light)|toroidal (pulse|light|vortex)|optical (tweezer|trap|force|manipulation)|spatiotemporal|light[- ]field|phase singular",
+   "ctx": true
+  },
+  {
+   "id": "nano",
+   "name": "微纳光学",
+   "color": "#D0402F",
+   "re": "plasmon|nanophotonic|nano-?optic|nano-?antenna|\\bmie\\b|dielectric nano|nanocavit|nano-?resonator|photonic crystal|polariton|near-field|subwavelength|bound states? in the continuum|\\bq?-?BICs?\\b|quasi-bic|anapole|whispering|hot (electron|carrier)|nanolaser|surface lattice resonance|nanostructure|nanoparticle|chiral(ity)? (optic|photon|plasmon|nano)|circular dichroism|high-q|moir[eé] photon",
+   "ctx": true
+  },
+  {
+   "id": "ai",
+   "name": "智能设计",
+   "color": "#8A3B6A",
+   "re": "inverse[- ]design|deep learning|neural network|machine learning|topology optimi|large language model|\\bLLMs?\\b|agentic|\\bAI\\b|differentiable|autonomous|generative model|diffusion model",
+   "secondary": true
+  }
+ ],
+ "prefilter": "metasurf|metalens|meta-?optic|metagrating|meta-?atom|metamaterial|topolog|non-hermitian|exceptional point|plasmon|nanophoton|nano-?optic|nano-?antenna|vortex|vortic|angular momentum|structured (light|beam|wave|field)|bound states? in the continuum|\\bq?-?bics?\\b|photonic crystal|polariton|\\bmie\\b|hyperbolic|skyrmion|meron|hologra|wavefront|chiral|subwavelength|near-field|inverse[- ]design|polariz|epsilon-near-zero|cloak|time-varying|spatiotemporal|beam (shaping|steering)|nanocavit|nano-?resonator|anapole|nanolaser|flat optic",
+ "arxiv_query": "(cat:physics.optics OR cat:physics.app-ph OR cat:cond-mat.mes-hall) AND (abs:metasurface OR abs:metasurfaces OR abs:metalens OR abs:metamaterial OR abs:metamaterials OR abs:topological OR abs:plasmonic OR abs:plasmon OR abs:nanophotonic OR abs:vortex OR abs:\"orbital angular momentum\" OR abs:\"structured light\" OR abs:\"bound states in the continuum\" OR abs:\"photonic crystal\" OR abs:\"non-Hermitian\" OR abs:skyrmion OR abs:polariton OR abs:Mie OR abs:nanoantenna OR abs:hyperbolic)",
+ "sources": [
+  {
+   "id": "arxiv",
+   "name": "arXiv",
+   "group": "arXiv"
+  },
+  {
+   "id": "nature",
+   "name": "Nature",
+   "group": "Nature 系列",
+   "issn": "0028-0836"
+  },
+  {
+   "id": "nphoton",
+   "name": "Nature Photonics",
+   "group": "Nature 系列",
+   "issn": "1749-4885"
+  },
+  {
+   "id": "nnano",
+   "name": "Nature Nanotechnology",
+   "group": "Nature 系列",
+   "issn": "1748-3387"
+  },
+  {
+   "id": "nphys",
+   "name": "Nature Physics",
+   "group": "Nature 系列",
+   "issn": "1745-2473"
+  },
+  {
+   "id": "nmat",
+   "name": "Nature Materials",
+   "group": "Nature 系列",
+   "issn": "1476-1122"
+  },
+  {
+   "id": "ncomms",
+   "name": "Nature Communications",
+   "group": "Nature 系列",
+   "issn": "2041-1723"
+  },
+  {
+   "id": "lsa",
+   "name": "Light: Science & Applications",
+   "group": "Nature 系列",
+   "issn": "2047-7538"
+  },
+  {
+   "id": "elight",
+   "name": "eLight",
+   "group": "Nature 系列",
+   "issn": "2662-8643"
+  },
+  {
+   "id": "science",
+   "name": "Science",
+   "group": "Science 系列",
+   "issn": "0036-8075"
+  },
+  {
+   "id": "sciadv",
+   "name": "Science Advances",
+   "group": "Science 系列",
+   "issn": "2375-2548"
+  },
+  {
+   "id": "nanolett",
+   "name": "Nano Letters",
+   "group": "ACS",
+   "issn": "1530-6984"
+  },
+  {
+   "id": "acsphot",
+   "name": "ACS Photonics",
+   "group": "ACS",
+   "issn": "2330-4022"
+  },
+  {
+   "id": "acsnano",
+   "name": "ACS Nano",
+   "group": "ACS",
+   "issn": "1936-0851"
+  },
+  {
+   "id": "optica",
+   "name": "Optica",
+   "group": "Optica",
+   "issn": "2334-2536"
+  },
+  {
+   "id": "prj",
+   "name": "Photonics Research",
+   "group": "Optica",
+   "issn": "2327-9125"
+  },
+  {
+   "id": "ol",
+   "name": "Optics Letters",
+   "group": "Optica",
+   "issn": "0146-9592"
+  },
+  {
+   "id": "prl",
+   "name": "Physical Review Letters",
+   "group": "APS",
+   "issn": "0031-9007"
+  },
+  {
+   "id": "prx",
+   "name": "Physical Review X",
+   "group": "APS",
+   "issn": "2160-3308"
+  },
+  {
+   "id": "lpr",
+   "name": "Laser & Photonics Reviews",
+   "group": "Wiley",
+   "issn": "1863-8880"
+  },
+  {
+   "id": "adma",
+   "name": "Advanced Materials",
+   "group": "Wiley",
+   "issn": "0935-9648"
+  },
+  {
+   "id": "adom",
+   "name": "Advanced Optical Materials",
+   "group": "Wiley",
+   "issn": "2195-1071"
+  },
+  {
+   "id": "ap",
+   "name": "Advanced Photonics",
+   "group": "其他",
+   "issn": "2577-5421"
+  },
+  {
+   "id": "nanoph",
+   "name": "Nanophotonics",
+   "group": "其他",
+   "issn": "2192-8614"
+  },
+  {
+   "id": "oea",
+   "name": "Opto-Electronic Advances",
+   "group": "其他",
+   "issn": "2096-4579"
+  }
+ ]
+}
