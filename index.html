@@ -76,8 +76,11 @@ header .sub b{font-weight:600;color:var(--ink)}
 .zh{margin:6px 0 0;color:var(--ink);font-size:14.5px;max-width:72ch}
 .zh.pending{color:var(--ink3)}
 .meta{margin-top:6px;color:var(--ink3);font-size:13px;display:flex;flex-wrap:wrap;gap:2px 12px}
-.meta .src{color:var(--ink);font-style:italic;font-weight:700;font-family:var(--serif);font-size:14px}
-.meta .src.ax{font-style:normal;font-family:var(--sans);font-weight:700;color:#9B2C2C;font-size:13.5px}
+.venue{margin:0 0 5px;line-height:1}
+.venue .src{display:inline-block;font-family:var(--serif);font-style:italic;font-weight:700;font-size:14px;line-height:1.35;color:#1F3550;background:#E3EAF1;border-radius:4px;padding:1px 8px}
+.venue .src.top{background:#1F3550;color:#fff}
+.venue .src.ax{font-family:var(--sans);font-style:normal;font-size:12.5px;color:#9B2C2C;background:#fff;box-shadow:inset 0 0 0 1px #E2B4B4}
+.item.read .venue .src{opacity:.55}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
 .chip{border:0;background:color-mix(in srgb,var(--c) 11%,#fff);color:color-mix(in srgb,var(--c) 80%,#000);border-radius:4px;padding:1px 8px;font-size:12.5px;cursor:pointer}
 .abs{margin-top:10px;color:var(--ink2);font-size:14px;max-width:76ch;display:none;font-family:var(--serif);line-height:1.62}
@@ -326,16 +329,18 @@ function itemHTML(p){
   const read = !!state.read[p.key], star = !!state.star[p.key];
   const stripes = (tps.length ? tps : [null]).map(t => `<span style="background:${t ? TMAP[t].color : '#C3CBD1'}"></span>`).join('');
   const zh = a?.zh ? `<p class="zh">${esc(a.zh)}</p>` : (p.rt.length && aiRunning ? '<p class="zh pending">正在生成中文要点</p>' : (p.rt.length ? '' : '<p class="zh pending">关键词未命中研究方向</p>'));
-  const src = p.src === 'arxiv' ? `<span class="src ax">arXiv${p.sub ? ' '+esc(p.sub) : ''}</span>` : `<span class="src">${esc(p.journal)}</span>`;
+  const TOP = ['nature','nphoton','nnano','nphys','nmat','science','lsa','elight'];
+  const src = p.src === 'arxiv' ? `<span class="src ax">arXiv${p.sub ? ' '+esc(p.sub) : ''}</span>` : `<span class="src${TOP.includes(p.src) ? ' top' : ''}">${esc(p.journal)}</span>`;
   const links = [`<a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${p.src==='arxiv'?'arXiv 页面':'期刊页面'}</a>`];
   if (p.pdf) links.push(`<a href="${esc(p.pdf)}" target="_blank" rel="noopener" data-open="1">PDF</a>`);
   if (p.arxiv && p.src !== 'arxiv') links.push(`<a href="${esc(p.arxiv)}" target="_blank" rel="noopener" data-open="1">arXiv 版本</a>`);
   return `<article class="item${read?' read':''}" id="i-${esc(p.key)}" data-k="${esc(p.key)}">
     <div class="lines" aria-hidden="true">${stripes}</div>
     <div class="body">
+      <div class="venue">${src}</div>
       <h3 class="t"><a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${esc(p.title)}</a></h3>
       ${zh}
-      <div class="meta">${src}<time>${fmtDate(p.ts)}</time><span class="au">${esc(authorsShort(p.authors))}</span></div>
+      <div class="meta"><time>${fmtDate(p.ts)}</time><span class="au">${esc(authorsShort(p.authors))}</span></div>
       ${tps.length ? `<div class="chips">${tps.map(t => `<button class="chip" style="--c:${TMAP[t].color}" data-t="${t}">${TMAP[t].name}</button>`).join('')}</div>` : ''}
       <div class="abs">${p.abs ? esc(p.abs) : '<span style="font-family:var(--sans);color:var(--ink3)">期刊摘要请在原文页面查看。</span>'}<div class="links">${links.join('')}</div></div>
     </div>
