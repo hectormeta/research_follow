@@ -57,6 +57,12 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
 .plhead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--ink3)}
 .plhead a{color:var(--focus)}
 .note{color:var(--ink3);font-size:13px;margin-top:28px;max-width:80ch}
+.lgh{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 6px;font-size:12.5px}
+.lgh button{border:0;background:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--ink2);padding:1px 0}
+.lgh button i{width:10px;height:10px;border-radius:2px;flex:none}
+.lgh button.off{opacity:.35}
+.ycap{font-size:12px;color:var(--ink3);margin:0 0 -2px}
+.term .n{opacity:.8;font-size:12px}
 .err{color:#B3261E}
 @media (max-width:900px){.c7,.c5,.c6{grid-column:span 12}.chart.tall{height:420px}}
 @media (max-width:620px){.wrap{padding:18px 14px 60px}.controls{margin:14px -14px 0;padding:10px 14px}h1{font-size:25px}.chart{height:300px}}
@@ -84,13 +90,15 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
         <form class="adder" id="adder" autocomplete="off"><input id="termIn" list="termList" placeholder="例如 quasi-BIC、thin-film lithium niobate、超构透镜"><datalist id="termList"></datalist><button class="btn primary" type="submit">添加</button></form>
       </div>
       <div class="terms" id="terms"></div>
+      <div class="ycap" id="capExplore"></div>
       <div class="chart" id="cExplore"></div>
       <div class="plhead"><span id="plTitle"></span><a id="plOpen" href="./">在文献列表中打开</a></div>
       <div class="plist" id="plist"></div>
     </section>
 
     <section class="card c7">
-      <h2>各方向论文数</h2><p class="desc">每天新出现的相关论文，按主题堆叠。一篇论文可以属于多个主题。点图例可以隐藏某个主题。</p>
+      <h2>各方向论文数</h2><p class="desc">每天新出现的相关论文，按主题堆叠。一篇论文可以属于多个主题。点下面的主题可以隐藏或显示。</p>
+      <div class="lgh" id="lgTopics"></div>
       <div class="chart" id="cTopics"></div>
     </section>
     <section class="card c5">
@@ -104,7 +112,8 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
     </section>
 
     <section class="card c7">
-      <h2>关键词共现网络</h2><p class="desc">经常出现在同一篇论文里的关键词连在一起，圆越大论文越多，颜色表示所属方向。可以拖动、缩放，点圆加入自由探索。</p>
+      <h2>关键词共现网络</h2><p class="desc">经常出现在同一篇论文里的关键词连在一起，圆越大论文越多，颜色表示所属方向。可以拖动、缩放，点圆加入自由探索；点下面的方向可以隐藏或显示。</p>
+      <div class="lgh" id="lgGraph"></div>
       <div class="chart tall" id="cGraph"></div>
     </section>
     <section class="card c5">
@@ -112,7 +121,7 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
       <div class="cloud" id="cloud"></div>
     </section>
   </div>
-  <p class="note">数据每天自动更新；趋势历史从 2026 年 11 月开始逐日积累，30 天以内的图表直接由当前论文计算。关键词由规则词表和 Claude 标注共同得到，计数是包含该关键词的论文篇数。图表使用开源库 Apache ECharts。</p>
+  <p class="note">数据每天自动更新；趋势历史从 2026 年 11 月开始逐日积累，30 天以内的图表直接由当前论文计算。为了让不同日期可比，图表里的主题都按同一套关键词规则判定（列表页的主题标签部分来自 Claude，可能略有不同）。关键词由规则词表和 Claude 标注共同得到，计数是包含该关键词的论文篇数。图表使用开源库 Apache ECharts。</p>
 </div>
 
 <script>
@@ -137,8 +146,10 @@ const pad = n => String(n).padStart(2, '0');
 const dstr = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const short = s => s.slice(5).replace('-', '/');
 
-const papers = (DATA.papers || []).filter(p => (p.rel === undefined ? p.rt && p.rt.length : p.rel > 0) && p.rt && p.rt.length).map(p => {
-  p.tps = (p.tp && p.tp.length ? p.tp : p.rt).filter(t => TMAP[t]);
+// Charts use the keyword-rule topics for every paper, so counts stay comparable across days
+// (Claude's topic/relevance labels exist only for recent papers).
+const papers = (DATA.papers || []).filter(p => p.rt && p.rt.length).map(p => {
+  p.tps = p.rt.filter(t => TMAP[t]);
   p.day = dstr(p.ts);
   p.kn = (p.kw || []).map(k => KMAP[k]?.name).filter(Boolean);
   p._s = (p.title + ' ' + (p.abs || '') + ' ' + (p.zh || '') + ' ' + (p.ak || []).join(' ') + ' ' + p.kn.join(' ')).toLowerCase();
@@ -158,7 +169,8 @@ const baseText = { fontFamily: getComputedStyle(document.body).fontFamily, color
 function srcOk(p){ if (prefs.src === 'all') return true; if (prefs.src === 'arxiv') return p.src === 'arxiv'; if (prefs.src === 'top') return !!SMAP[p.src]?.top; return p.src !== 'arxiv'; }
 function rangeDays(){ return prefs.range === 'all' ? 30 : +prefs.range; }
 function daysList(n, endTs = NOW){ const out = []; for (let i = n - 1; i >= 0; i--) out.push(dstr(endTs - i * DAY)); return out; }
-function smooth(arr){ const w = +prefs.smooth; if (w <= 1) return arr; return arr.map((_, i) => { const s = arr.slice(Math.max(0, i - w + 1), i + 1); return +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(2); }); }
+const LB = () => (+prefs.smooth > 1 ? +prefs.smooth - 1 : 0);   // extra look-back days for the moving average
+function smooth(arr){ const w = +prefs.smooth; if (w <= 1) return arr; const out = arr.map((_, i) => { const s = arr.slice(Math.max(0, i - w + 1), i + 1); return +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(2); }); return out.slice(LB()); }
 function inRange(p, n){ return NOW - p.ts < n * DAY; }
 
 /* ---------- term matching ---------- */
@@ -174,26 +186,29 @@ function matcher(term){
 
 /* ---------- explore ---------- */
 let selDay = null, selTerm = null;
-function renderTerms(){
-  $('#terms').innerHTML = terms.map((t, i) => `<span class="term" style="--c:${TERM_COLORS[i % TERM_COLORS.length]}">${esc(t)}<button data-rm="${i}" aria-label="移除 ${esc(t)}">×</button></span>`).join('') || '<span class="lbl">还没有关键词，在右上方输入或点下面图表里的关键词。</span>';
+function renderTerms(totals = {}){
+  $('#terms').innerHTML = terms.map((t, i) => `<span class="term" style="--c:${TERM_COLORS[i % TERM_COLORS.length]}">${esc(t)}${totals[t] !== undefined ? ` <span class="n">${totals[t]} 篇</span>` : ''}<button data-rm="${i}" aria-label="移除 ${esc(t)}">×</button></span>`).join('') || '<span class="lbl">还没有关键词，在右上方输入或点下面图表里的关键词。</span>';
 }
 function renderExplore(){
-  renderTerms();
-  const n = rangeDays(); const days = daysList(n);
+  const n = rangeDays(); const days = daysList(n); const ext = daysList(n + LB());
   const pool = papers.filter(p => srcOk(p) && inRange(p, n));
+  const poolX = papers.filter(p => srcOk(p) && inRange(p, n + LB()));
+  const totals = {};
   const series = terms.map((t, i) => {
-    const m = matcher(t); const cnt = Object.fromEntries(days.map(d => [d, 0]));
-    for (const p of pool) if (m(p) && cnt[p.day] !== undefined) cnt[p.day]++;
-    const total = Object.values(cnt).reduce((a, b) => a + b, 0);
-    return { name:`${t}（${total}）`, term:t, type:'line', smooth:true, symbolSize:6, showSymbol:true, data:smooth(days.map(d => cnt[d])), lineStyle:{ width:2.4 }, itemStyle:{ color:TERM_COLORS[i % TERM_COLORS.length] } };
+    const m = matcher(t); const cnt = Object.fromEntries(ext.map(d => [d, 0]));
+    for (const p of poolX) if (m(p) && cnt[p.day] !== undefined) cnt[p.day]++;
+    const total = days.reduce((a, d) => a + cnt[d], 0);
+    totals[t] = total;
+    return { name:t, term:t, type:'line', smooth:true, symbolSize:6, showSymbol:true, data:smooth(ext.map(d => cnt[d])), lineStyle:{ width:2.4 }, itemStyle:{ color:TERM_COLORS[i % TERM_COLORS.length] } };
   });
   chart('cExplore').setOption({
-    textStyle: baseText, grid:{ left:40, right:20, top:36, bottom:30 }, tooltip:{ trigger:'axis' },
-    legend:{ top:0, left:0, textStyle:{ fontSize:12.5 } },
+    textStyle: baseText, grid:{ left:8, right:16, top:12, bottom:8, containLabel:true }, tooltip:{ trigger:'axis', confine:true },
     xAxis:{ type:'category', data:days.map(short), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
-    yAxis:{ type:'value', minInterval:1, splitLine:{ lineStyle:{ color:'#EEF2F4' } }, name: prefs.smooth === '7' ? '篇/天（7 日平均）' : '篇/天', nameTextStyle:{ align:'left' } },
+    yAxis:{ type:'value', minInterval: prefs.smooth === '7' ? 0 : 1, splitLine:{ lineStyle:{ color:'#EEF2F4' } } },
     series
   }, true);
+  renderTerms(totals);
+  $('#capExplore').textContent = terms.length ? (prefs.smooth === '7' ? '每天论文数（7 日平均）' : '每天论文数') : '';
   // list
   const ms = (selTerm ? [selTerm] : terms).map(matcher);
   let list = pool.filter(p => ms.some(m => m(p)));
@@ -212,27 +227,30 @@ $('#adder').addEventListener('submit', e => { e.preventDefault(); addTerm($('#te
 $('#terms').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; terms.splice(+b.dataset.rm, 1); selTerm = null; persist(); renderExplore(); });
 
 /* ---------- topics over time ---------- */
+const hidTopics = new Set();
 function renderTopics(){
   let days, rows;
   if (prefs.range === 'all') {
     const td = TRENDS.days || {};
-    days = Object.keys(td).sort();
-    rows = TOPICS.map(t => days.map(d => (td[d]?.t || {})[t.id] || 0));
+    const all = Object.keys(td).sort(); days = all.slice(LB());
+    rows = TOPICS.map(t => all.map(d => (td[d]?.t || {})[t.id] || 0));
   } else {
-    const n = rangeDays(); days = daysList(n);
-    const idx = Object.fromEntries(days.map((d, i) => [d, i]));
-    rows = TOPICS.map(() => days.map(() => 0));
+    const n = rangeDays(); days = daysList(n); const ext = daysList(n + LB());
+    const idx = Object.fromEntries(ext.map((d, i) => [d, i]));
+    rows = TOPICS.map(() => ext.map(() => 0));
     const ti = Object.fromEntries(TOPICS.map((t, i) => [t.id, i]));
     for (const p of papers) if (srcOk(p) && idx[p.day] !== undefined) for (const t of p.tps) rows[ti[t]][idx[p.day]]++;
   }
   chart('cTopics').setOption({
-    textStyle: baseText, color: TOPICS.map(t => t.color), tooltip:{ trigger:'axis', order:'valueDesc' },
-    legend:{ type:'scroll', bottom:0, textStyle:{ fontSize:12 } }, grid:{ left:40, right:16, top:16, bottom:58 },
+    textStyle: baseText, color: TOPICS.map(t => t.color), tooltip:{ trigger:'axis', order:'valueDesc', confine:true },
+    legend:{ show:false, selected:Object.fromEntries(TOPICS.map(t => [t.name, !hidTopics.has(t.name)])) }, grid:{ left:8, right:16, top:12, bottom:8, containLabel:true },
     xAxis:{ type:'category', boundaryGap:false, data:days.map(short), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
     yAxis:{ type:'value', splitLine:{ lineStyle:{ color:'#EEF2F4' } } },
     series: TOPICS.map((t, i) => ({ name:t.name, type:'line', stack:'all', smooth:true, symbol:'none', areaStyle:{ opacity:.82 }, lineStyle:{ width:0 }, emphasis:{ focus:'series' }, data:smooth(rows[i]) }))
   }, true);
+  $('#lgTopics').innerHTML = TOPICS.map(t => `<button data-n="${esc(t.name)}" class="${hidTopics.has(t.name) ? 'off' : ''}"><i style="background:${t.color}"></i>${esc(t.name)}</button>`).join('');
 }
+$('#lgTopics').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; const n = b.dataset.n; hidTopics.has(n) ? hidTopics.delete(n) : hidTopics.add(n); renderTopics(); });
 
 /* ---------- rising keywords ---------- */
 function kwCounts(pool){ const c = {}; for (const p of pool) for (const k of p.kw || []) c[k] = (c[k] || 0) + 1; return c; }
@@ -244,9 +262,9 @@ function renderRise(){
   const rows = Object.keys(cur).filter(k => cur[k] >= 3).map(k => ({ k, c:cur[k], p:prev[k] || 0, g:(cur[k] + 1) / ((prev[k] || 0) + 1) }))
     .sort((a, b) => b.g - a.g || b.c - a.c).slice(0, 15).reverse();
   chart('cRise').setOption({
-    textStyle: baseText, grid:{ left:8, right:64, top:6, bottom:6, containLabel:true },
-    tooltip:{ formatter: e => { const r = rows[e.dataIndex]; return `${esc(KMAP[r.k].name)}<br>近 ${n} 天 ${r.c} 篇，之前 ${r.p} 篇`; } },
-    xAxis:{ type:'value', show:false }, yAxis:{ type:'category', data:rows.map(r => KMAP[r.k].name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12.5, color:'#16202C' } },
+    textStyle: baseText, grid:{ left:8, right:78, top:6, bottom:6, containLabel:true },
+    tooltip:{ confine:true, formatter: e => { const r = rows[e.dataIndex]; return `${esc(KMAP[r.k].name)}<br>近 ${n} 天 ${r.c} 篇，之前 ${r.p} 篇`; } },
+    xAxis:{ type:'value', show:false }, yAxis:{ type:'category', data:rows.map(r => KMAP[r.k].name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12.5, color:'#16202C', width:150, overflow:'truncate' } },
     series:[{ type:'bar', barWidth:'62%', data:rows.map(r => ({ value:r.c, itemStyle:{ color:TMAP[KMAP[r.k].topic]?.color || '#888', borderRadius:[0,4,4,0] } })),
       label:{ show:true, position:'right', fontSize:12, color:'#45515E', formatter: e => { const r = rows[e.dataIndex]; return r.p ? `${r.c}  ↑${Math.round((r.c / r.p - 1) * 100)}%` : `${r.c}  新`; } } }]
   }, true);
@@ -275,37 +293,48 @@ function renderSankey(){
   top.forEach(k => nodeOf(KMAP[k].name, TMAP[KMAP[k].topic]?.color || '#888'));
   const links = Object.entries(L).filter(([, v]) => v >= 0.5).map(([k, v]) => { const [s, t] = k.split('\u0001'); return { source:s, target:t, value:+v.toFixed(1) }; });
   const used = new Set(links.flatMap(l => [l.source, l.target]));
+  const el = $('#cSankey'); const nKw = top.filter(k => used.has(KMAP[k].name)).length;
+  el.style.height = Math.max(480, nKw * 22 + 40) + 'px'; chart('cSankey').resize();
+  const W = chart('cSankey').getWidth(); const rightPad = Math.min(170, Math.max(110, W * 0.2));
   chart('cSankey').setOption({
-    textStyle: baseText, tooltip:{ trigger:'item', formatter: e => e.dataType === 'edge' ? `${esc(e.data.source)} → ${esc(e.data.target)}：${Math.round(e.data.value)} 篇` : esc(e.name) },
-    series:[{ type:'sankey', left:8, right:150, top:8, bottom:8, nodeGap:7, nodeWidth:12, draggable:true, layoutIterations:64,
+    textStyle: baseText, tooltip:{ trigger:'item', confine:true, formatter: e => e.dataType === 'edge' ? `${esc(e.data.source)} → ${esc(e.data.target)}：${Math.round(e.data.value)} 篇` : esc(e.name) },
+    series:[{ type:'sankey', left:4, right:rightPad, top:8, bottom:8, nodeGap:8, nodeWidth:12, draggable:true, layoutIterations:64,
       data:[...nodes.values()].filter(n => used.has(n.name)), links,
-      lineStyle:{ color:'gradient', opacity:.32, curveness:.5 }, emphasis:{ focus:'adjacency' }, label:{ fontSize:12.5, color:'#16202C' } }]
+      lineStyle:{ color:'gradient', opacity:.3, curveness:.5 }, emphasis:{ focus:'adjacency' },
+      label:{ fontSize:12, color:'#16202C', textBorderColor:'#fff', textBorderWidth:3, width:rightPad - 12, overflow:'truncate' },
+      levels:[{ depth:0, label:{ position:'right' } }, { depth:1, label:{ position:'right' } }, { depth:2, label:{ position:'right' } }] }]
   }, true);
   chart('cSankey').off('click'); chart('cSankey').on('click', e => { if (e.dataType === 'node' && kwByName[e.name.toLowerCase()]) addTerm(e.name); else if (e.dataType === 'node' && topicByName[e.name]) addTerm(e.name); });
 }
 
 /* ---------- co-occurrence graph ---------- */
+const hidCats = new Set();
 function renderGraph(){
   const n = rangeDays();
   const pool = papers.filter(p => srcOk(p) && inRange(p, n));
   const cnt = kwCounts(pool);
-  const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 50).map(x => x[0]);
+  const Wg = chart('cGraph').getWidth(); const narrow = Wg < 560;
+  const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, narrow ? 28 : 50).map(x => x[0]);
   const set = new Set(top); const E = {};
   for (const p of pool) { const ks = [...new Set((p.kw || []).filter(k => set.has(k)))].sort(); for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const k = ks[i] + '|' + ks[j]; E[k] = (E[k] || 0) + 1; } }
   const max = Math.max(1, ...top.map(k => cnt[k]));
+  const rankOf = Object.fromEntries(top.map((k, i) => [k, i]));
   const cats = TOPICS.map(t => ({ name:t.name, itemStyle:{ color:t.color } }));
   const ci = Object.fromEntries(TOPICS.map((t, i) => [t.id, i]));
   chart('cGraph').setOption({
-    textStyle: baseText, tooltip:{ formatter: e => e.dataType === 'edge' ? `${esc(KMAP[e.data.source].name)} + ${esc(KMAP[e.data.target].name)}：${e.data.value} 篇` : `${esc(e.data.name)}：${e.data.value} 篇` },
-    legend:{ type:'scroll', bottom:0, data:cats.map(c => c.name), textStyle:{ fontSize:12 } },
-    series:[{ type:'graph', layout:'force', roam:true, draggable:true, top:10, bottom:40, categories:cats,
-      force:{ repulsion:160, edgeLength:[40, 140], gravity:.12 },
-      data: top.map(k => ({ id:k, name:KMAP[k].name, value:cnt[k], category:ci[KMAP[k].topic] ?? 0, symbolSize: 10 + 34 * Math.sqrt(cnt[k] / max), label:{ show: cnt[k] >= max * 0.12, fontSize:12 } })),
+    textStyle: baseText, tooltip:{ confine:true, formatter: e => e.dataType === 'edge' ? `${esc(KMAP[e.data.source].name)} + ${esc(KMAP[e.data.target].name)}：${e.data.value} 篇` : `${esc(e.data.name)}：${e.data.value} 篇` },
+    legend:{ show:false, data:cats.map(c => c.name), selected:Object.fromEntries(cats.map(c => [c.name, !hidCats.has(c.name)])) },
+    series:[{ type:'graph', layout:'force', roam:true, draggable:true, top:16, bottom:16, left:16, right:16, categories:cats, labelLayout:{ hideOverlap:true },
+      force:{ repulsion: narrow ? 170 : 230, edgeLength: narrow ? [40, 100] : [50, 130], gravity: narrow ? .14 : .2, friction:.15 }, zoom: narrow ? 1 : .92,
+      data: top.map(k => ({ id:k, name:KMAP[k].name, value:cnt[k], category:ci[KMAP[k].topic] ?? 0, symbolSize: (narrow ? 8 : 10) + (narrow ? 22 : 34) * Math.sqrt(cnt[k] / max), label:{ show: rankOf[k] < (narrow ? 10 : 18), position: narrow ? 'bottom' : 'right', fontSize: narrow ? 11 : 12, color:'#16202C', textBorderColor:'#fff', textBorderWidth:3 } })),
       links: Object.entries(E).filter(([, v]) => v >= 2).map(([k, v]) => { const [a, b] = k.split('|'); return { source:a, target:b, value:v, lineStyle:{ width: Math.min(6, 0.6 + v / 3), opacity:.35 } }; }),
       emphasis:{ focus:'adjacency', label:{ show:true } }, lineStyle:{ color:'source', curveness:.12 } }]
   }, true);
   chart('cGraph').off('click'); chart('cGraph').on('click', e => { if (e.dataType === 'node') addTerm(e.data.name); });
+  const present = new Set(top.map(k => ci[KMAP[k].topic] ?? 0));
+  $('#lgGraph').innerHTML = cats.filter((c, i) => present.has(i)).map(c => `<button data-n="${esc(c.name)}" class="${hidCats.has(c.name) ? 'off' : ''}"><i style="background:${c.itemStyle.color}"></i>${esc(c.name)}</button>`).join('');
 }
+$('#lgGraph').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; const n = b.dataset.n; hidCats.has(n) ? hidCats.delete(n) : hidCats.add(n); renderGraph(); });
 
 /* ---------- AI keyword cloud ---------- */
 function renderCloud(){

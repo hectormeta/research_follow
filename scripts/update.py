@@ -405,14 +405,14 @@ def build_trends(data):
     old = jload(path, {}).get('days', {})
     days = {}
     for q in data['papers']:
-        if q.get('rel') == 0 or not q.get('rt'):
+        if not q.get('rt'):  # rule-based relevance/topics only, so days with and without Claude labels stay comparable
             continue
         d = dt.datetime.fromtimestamp(q['ts'] / 1000, TZ).date().isoformat()
         e = days.setdefault(d, {'n': 0, 'ax': 0, 't': {}, 'k': {}, 'g': {}})
         e['n'] += 1
         if q['src'] == 'arxiv':
             e['ax'] += 1
-        for t in set(q.get('tp') or q['rt']):
+        for t in set(q['rt']):
             e['t'][t] = e['t'].get(t, 0) + 1
         for k in q.get('kw', []):
             e['k'][k] = e['k'].get(k, 0) + 1
