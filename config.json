@@ -93,12 +93,35 @@
   }
  ],
  "prefilter": "metasurf|metalens|meta-?optic|metagrating|meta-?atom|metamaterial|topolog|non-hermitian|exceptional point|plasmon|nanophoton|nano-?optic|nano-?antenna|vortex|vortic|angular momentum|structured (light|beam|wave|field)|bound states? in the continuum|\\bq?-?bics?\\b|photonic crystal|polariton|\\bmie\\b|hyperbolic|skyrmion|meron|hologra|wavefront|chiral|subwavelength|near-field|inverse[- ]design|polariz|epsilon-near-zero|cloak|time-varying|spatiotemporal|beam (shaping|steering)|nanocavit|nano-?resonator|anapole|nanolaser|flat optic|\\bsens(or|ors|ing)\\b|biosens|photodetect|optical (comput|neural|logic|matrix|signal|communicat|fiber|switch)|photonic (comput|neural|tensor|accelerat|processor|integrat|chip|circuit)|diffractive|neuromorphic|graphene|van der waals|\\bvdw\\b|two-dimensional|\\b2d (material|semiconductor|crystal)|\\bhbn\\b|dichalcogenide|\\btmds?\\b|mos2|ws2|wse2|mose2|monolayer|on-chip|silicon photonic|integrated photonic|lithium niobate|\\btfln\\b|silicon nitride|microring|ring resonator|microresonator|microcomb|waveguide|modulator|computational imaging|lensless|ptychograph|single-pixel|ghost imaging|phase retrieval|hyperspectral|spectrometer|super-resolution|microscop|imaging|nonlinear optic|harmonic generation|four-wave mixing|parametric|frequency (conversion|comb)|quantum (emitter|light|photonic|optic|dot)|single[- ]photon|entangled photon|photon pair|squeez|laser|lasing|optical",
- "arxiv_query": "cat:physics.optics OR ((cat:physics.app-ph OR cat:cond-mat.mes-hall OR cat:cond-mat.mtrl-sci OR cat:quant-ph OR cat:eess.IV OR cat:cs.ET OR cat:physics.class-ph) AND (abs:metasurface OR abs:metasurfaces OR abs:metalens OR abs:metamaterial OR abs:metamaterials OR abs:photonic OR abs:photonics OR abs:plasmonic OR abs:plasmon OR abs:nanophotonic OR abs:polariton OR abs:polaritons OR abs:\"optical vortex\" OR abs:\"orbital angular momentum\" OR abs:\"structured light\" OR abs:\"bound states in the continuum\" OR abs:\"non-Hermitian\" OR abs:\"optical computing\" OR abs:\"optical neural network\" OR abs:\"diffractive\" OR abs:\"computational imaging\" OR abs:lensless OR abs:\"single-pixel\" OR abs:ptychography OR abs:\"silicon photonics\" OR abs:\"lithium niobate\" OR abs:microresonator OR abs:microcomb OR abs:waveguide OR abs:\"on-chip\" OR abs:\"optical sensing\" OR abs:biosensor OR abs:photodetector OR abs:\"van der Waals\" OR abs:\"optical skyrmion\"))",
+ "arxiv_query": "cat:physics.optics OR ((cat:physics.app-ph OR cat:cond-mat.mes-hall OR cat:cond-mat.mtrl-sci OR cat:quant-ph OR cat:eess.IV OR cat:cs.ET OR cat:physics.class-ph) AND (abs:metasurface OR abs:metasurfaces OR abs:metalens OR abs:metamaterial OR abs:metamaterials OR abs:photonic OR abs:photonics OR abs:plasmonic OR abs:plasmon OR abs:nanophotonic OR abs:polariton OR abs:polaritons OR abs:\"optical vortex\" OR abs:\"orbital angular momentum\" OR abs:\"structured light\" OR abs:\"bound states in the continuum\" OR abs:\"non-Hermitian\" OR abs:\"optical computing\" OR abs:\"optical neural network\" OR abs:\"diffractive\" OR abs:\"computational imaging\" OR abs:lensless OR abs:\"single-pixel\" OR abs:ptychography OR abs:\"silicon photonics\" OR abs:\"lithium niobate\" OR abs:microresonator OR abs:microcomb OR abs:waveguide OR abs:\"on-chip\" OR abs:\"optical sensing\" OR abs:biosensor OR abs:photodetector OR abs:\"van der Waals\" OR abs:\"optical skyrmion\" OR abs:\"exceptional point\" OR abs:\"exceptional points\" OR abs:\"quasi-BIC\" OR abs:\"topological photonics\" OR abs:\"photonic crystal\" OR abs:optomechanical OR abs:\"cavity QED\" OR abs:\"light-matter\" OR abs:\"strong coupling\" OR abs:\"skin effect\" OR abs:\"parity-time\"))",
  "sources": [
   {
    "id": "arxiv",
    "name": "arXiv",
-   "group": "arXiv"
+   "group": "预印本",
+   "preprint": true
+  },
+  {
+   "id": "chemrxiv",
+   "name": "ChemRxiv",
+   "group": "预印本",
+   "prefix": "10.26434",
+   "preprint": true
+  },
+  {
+   "id": "opticaopen",
+   "name": "Optica Open",
+   "group": "预印本",
+   "prefix": "10.1364",
+   "preprint": true
+  },
+  {
+   "id": "rsquare",
+   "name": "Research Square",
+   "group": "预印本",
+   "prefix": "10.21203",
+   "preprint": true,
+   "trend": false
   },
   {
    "id": "nature",
@@ -118,13 +141,15 @@
    "id": "sciadv",
    "name": "Science Advances",
    "group": "综合",
-   "issn": "2375-2548"
+   "issn": "2375-2548",
+   "top": true
   },
   {
    "id": "ncomms",
    "name": "Nature Communications",
    "group": "综合",
-   "issn": "2041-1723"
+   "issn": "2041-1723",
+   "top": true
   },
   {
    "id": "pnas",
@@ -163,7 +188,8 @@
    "name": "Nature Physics",
    "group": "Nature 子刊",
    "issn": "1745-2473",
-   "top": true
+   "top": true,
+   "physics": true
   },
   {
    "id": "nmat",
@@ -184,7 +210,8 @@
    "name": "Nature Reviews Physics",
    "group": "Nature 子刊",
    "issn": "2522-5820",
-   "top": true
+   "top": true,
+   "physics": true
   },
   {
    "id": "natrevmat",
@@ -197,7 +224,8 @@
    "id": "commphys",
    "name": "Communications Physics",
    "group": "Nature 子刊",
-   "issn": "2399-3650"
+   "issn": "2399-3650",
+   "physics": true
   },
   {
    "id": "npjnano",
@@ -332,14 +360,17 @@
    "name": "Physical Review Letters",
    "group": "物理",
    "issn": "0031-9007",
-   "aps": "PRL"
+   "aps": "PRL",
+   "physics": true,
+   "top": true
   },
   {
    "id": "prx",
    "name": "Physical Review X",
    "group": "物理",
    "issn": "2160-3308",
-   "aps": "PRX"
+   "aps": "PRX",
+   "physics": true
   },
   {
    "id": "rmp",
@@ -347,53 +378,134 @@
    "group": "物理",
    "issn": "0034-6861",
    "top": true,
-   "aps": "RMP"
+   "aps": "RMP",
+   "physics": true
   },
   {
    "id": "prapplied",
    "name": "Physical Review Applied",
    "group": "物理",
    "issn": "2331-7019",
-   "aps": "PRAPPLIED"
+   "aps": "PRAPPLIED",
+   "physics": true
   },
   {
    "id": "prr",
    "name": "Physical Review Research",
    "group": "物理",
    "issn": "2643-1564",
-   "aps": "PRRESEARCH"
+   "aps": "PRRESEARCH",
+   "physics": true
   },
   {
    "id": "pra",
    "name": "Physical Review A",
    "group": "物理",
    "issn": "2469-9926",
-   "aps": "PRA"
+   "aps": "PRA",
+   "physics": true
   },
   {
    "id": "prb",
    "name": "Physical Review B",
    "group": "物理",
    "issn": "2469-9950",
-   "aps": "PRB"
+   "aps": "PRB",
+   "physics": true
   },
   {
    "id": "apr",
    "name": "Applied Physics Reviews",
    "group": "物理",
-   "issn": "1931-9401"
+   "issn": "1931-9401",
+   "physics": true
   },
   {
    "id": "apl",
    "name": "Applied Physics Letters",
    "group": "物理",
-   "issn": "0003-6951"
+   "issn": "0003-6951",
+   "physics": true
   },
   {
    "id": "scpma",
    "name": "Sci. China Phys. Mech. Astron.",
    "group": "物理",
-   "issn": "1674-7348"
+   "issn": "1674-7348",
+   "physics": true
+  },
+  {
+   "id": "njp",
+   "name": "New Journal of Physics",
+   "group": "物理",
+   "issn": "1367-2630",
+   "physics": true
+  },
+  {
+   "id": "rpp",
+   "name": "Reports on Progress in Physics",
+   "group": "物理",
+   "issn": "0034-4885",
+   "physics": true
+  },
+  {
+   "id": "prxq",
+   "name": "PRX Quantum",
+   "group": "物理",
+   "issn": "2691-3399",
+   "aps": "PRXQUANTUM",
+   "physics": true
+  },
+  {
+   "id": "pre",
+   "name": "Physical Review E",
+   "group": "物理",
+   "issn": "2470-0045",
+   "aps": "PRE",
+   "physics": true
+  },
+  {
+   "id": "prm",
+   "name": "Physical Review Materials",
+   "group": "物理",
+   "issn": "2475-9953",
+   "aps": "PRMATERIALS",
+   "physics": true
+  },
+  {
+   "id": "epl",
+   "name": "EPL",
+   "group": "物理",
+   "issn": "0295-5075",
+   "physics": true
+  },
+  {
+   "id": "cpl",
+   "name": "Chinese Physics Letters",
+   "group": "物理",
+   "issn": "0256-307X",
+   "physics": true
+  },
+  {
+   "id": "cpb",
+   "name": "Chinese Physics B",
+   "group": "物理",
+   "issn": "1674-1056",
+   "physics": true
+  },
+  {
+   "id": "aps_wl",
+   "name": "Acta Physica Sinica",
+   "group": "物理",
+   "issn": "1000-3290",
+   "physics": true
+  },
+  {
+   "id": "frontphys",
+   "name": "Frontiers of Physics",
+   "group": "物理",
+   "issn": "2095-0462",
+   "physics": true
   },
   {
    "id": "nanolett",
@@ -411,7 +523,8 @@
    "id": "adma",
    "name": "Advanced Materials",
    "group": "材料与纳米",
-   "issn": "0935-9648"
+   "issn": "0935-9648",
+   "top": true
   },
   {
    "id": "advsci",
@@ -440,12 +553,11 @@
  ],
  "default_off": [
   "ol",
-  "prb",
-  "apl",
-  "adma",
   "afm",
   "small",
-  "tap"
+  "tap",
+  "pre",
+  "prm"
  ],
  "keywords": [
   {
@@ -1054,5 +1166,10 @@
    "topic": "ai",
    "re": "two-photon (lithograph|polymeri)|3D print|nanoimprint|direct laser writ"
   }
+ ],
+ "physics_context": "bound states? in the continuum|\\bq?-?BICs?\\b|exceptional (point|surface|ring)|non-hermitian|skin effect|parity-time|\\bPT[- ]symmetr|anti-PT|coherent perfect absor|\\bwaves?\\b|resonan|scatter|fano|cavit|polariton|metamaterial|phonon|acoustic|floquet",
+ "start_date": "2026-01-01",
+ "history_skip": [
+  "rsquare"
  ]
 }

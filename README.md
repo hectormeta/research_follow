@@ -1,8 +1,8 @@
 # 微纳光学新文献
 
-每天自动汇总超表面、超材料、拓扑光学、光场调控、微纳光学、传感、光计算、二维材料、片上光学、计算成像、非线性与量子光子学方向的新论文：arXiv 预印本，加上 53 种期刊（经 Crossref，通讯作者来自 OpenAlex）。每篇论文有主题标签和中文一句话要点，访客可以在自己的浏览器里收藏、标记已读。
+每天自动汇总超表面、超材料、拓扑光学、光场调控、微纳光学、传感、光计算、二维材料、片上光学、计算成像、非线性与量子光子学方向的新论文：收录 2026 年 1 月 1 日以来的论文：arXiv、Research Square、Optica Open、ChemRxiv 预印本，加上 63 种期刊（Crossref 元数据；通讯作者、被引次数、开放获取链接和缺失摘要来自 OpenAlex）。每篇论文有主题标签和中文一句话要点，访客可以在自己的浏览器里收藏、标记已读。
 
-这是一个纯静态网站，用 GitHub Pages 免费托管，GitHub Actions 每天北京时间 8:30 抓取一次数据并重新发布。
+这是一个纯静态网站，用 GitHub Pages 托管；每天由本地 Cowork 定时任务抓取、写中文要点并推送，GitHub Actions 负责发布，并在 11:30 做兜底抓取。
 
 ## 部署（约 10 分钟）
 
@@ -39,5 +39,6 @@
 ## 页面
 
 - `index.html`：文献列表（缩略图、通讯作者、中文要点、收藏/已读）。
-- `explore.html`：趋势与探索（主题趋势、升温关键词、来源→主题→关键词流向图、关键词共现网络、自由输入关键词对比），用开源 Apache ECharts 绘制。
-- 数据文件：`data.json`（近 31 天论文）、`trends.json`（逐日累积的主题/关键词计数）、`summaries.json`、`authors.json`、`thumbs.json`（缓存）。
+- `explore.html`：趋势与探索（自由输入关键词对比、主题趋势、升温关键词、来源→主题→关键词流向图、关键词共现网络、期刊×方向热力图、关键词逐月热度），用开源 Apache ECharts 绘制。
+- 数据文件：`data.json`（近 31 天论文）、`archive/YYYY-MM.json`（更早的论文，按月）、`trends.json`（逐日主题/关键词计数）、`summaries.json`、`authors.json`、`thumbs.json`（缓存）。
+- 历史回填：`python3 scripts/update.py --backfill`（可多次运行续抓，起始日期见 `config.json` 的 `start_date`）。

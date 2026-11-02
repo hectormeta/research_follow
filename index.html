@@ -77,7 +77,10 @@ header .sub b{font-weight:600;color:var(--ink)}
 .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
 .top time{font-size:12.5px;color:var(--ink3)}
 .src{display:inline-block;font-family:var(--serif);font-style:italic;font-weight:700;font-size:14px;line-height:1.4;color:var(--navy);background:#E3EAF1;border-radius:4px;padding:0 8px}
-.src.top1{background:var(--navy);color:#fff}
+.src.top1{background:var(--navy);color:#fff;box-shadow:inset 0 -2px 0 #E2B34A;font-size:14.5px;padding:0 9px}
+.btn.toggle[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.cc{font-size:12.5px;color:var(--ink3)}
+.loading{color:var(--ink3);font-size:13px;margin-left:6px}
 .src.ax{font-family:var(--sans);font-style:normal;font-size:12.5px;color:#9B2C2C;background:#fff;box-shadow:inset 0 0 0 1px #E2B4B4}
 .item .t{font-family:var(--serif);font-weight:600;font-size:18px;line-height:1.32;margin:0}
 .item .t a{text-decoration:none}
@@ -143,7 +146,7 @@ header .sub b{font-weight:600;color:var(--ink)}
 
   <div class="controls" id="controls">
     <div class="seg" id="segDays" aria-label="时间范围">
-      <button data-v="1">今天</button><button data-v="3">3 天</button><button data-v="7">7 天</button><button data-v="14">14 天</button><button data-v="30">30 天</button>
+      <button data-v="1">今天</button><button data-v="3">3 天</button><button data-v="7">7 天</button><button data-v="30">30 天</button><button data-v="90">90 天</button><button data-v="9999">全部</button>
     </div>
     <div class="seg" id="segStatus" aria-label="阅读状态">
       <button data-v="all">全部</button><button data-v="unread">未读</button><button data-v="star">收藏</button>
@@ -151,16 +154,18 @@ header .sub b{font-weight:600;color:var(--ink)}
     <div class="seg" id="segSort" aria-label="排序">
       <button data-v="new">最新</button><button data-v="pick">精选</button>
     </div>
+    <button class="btn toggle" id="topBtn" aria-pressed="false">只看顶刊</button>
     <input class="search" id="q" type="search" placeholder="搜索标题、中文要点、作者、关键词">
     <button class="btn" id="srcBtn" aria-expanded="false">来源</button>
   </div>
   <div class="srcpanel" id="srcpanel"></div>
 
-  <div class="listhead"><span id="count"></span><span><button id="markAll">把当前列表标为已读</button></span></div>
+  <div class="listhead"><span><span id="count"></span><span class="loading" id="loadNote"></span></span><span><button id="markAll">把当前列表标为已读</button></span></div>
   <main id="list"></main>
   <footer class="foot">
-    <p>覆盖超表面、超材料、拓扑光学、光场调控、微纳光学、传感、光计算、二维材料、片上光学、计算成像、非线性与量子光子学。论文元数据来自 <a href="https://info.arxiv.org/help/api/index.html">arXiv API</a>、<a href="https://www.crossref.org/">Crossref</a> 和 <a href="https://openalex.org/">OpenAlex</a>，每天自动抓取近 31 天的新文章；缩略图直接链接到 arXiv 或出版社网站上的原图。</p>
-    <p>作者只列出前 3 位、末 2 位和通讯作者，中间用 … 省略；粗体加 * 是数据库标注的通讯作者，没有标注时粗体表示末位作者（通常是通讯作者）。</p>
+    <p>覆盖超表面、超材料、拓扑光学、光场调控、微纳光学、传感、光计算、二维材料、片上光学、计算成像、非线性与量子光子学，以及物理期刊里的 BIC、奇异点、非厄米等波动物理工作。收录 2026 年 1 月 1 日以来的论文，每天自动更新。</p>
+    <p>数据来源：预印本来自 <a href="https://info.arxiv.org/help/api/index.html">arXiv API</a>、<a href="https://www.researchsquare.com/">Research Square</a>（含 Nature 系列在审稿件）、<a href="https://opticaopen.org/">Optica Open</a> 和 <a href="https://chemrxiv.org/">ChemRxiv</a>；期刊论文元数据来自 <a href="https://www.crossref.org/">Crossref</a>；通讯作者、被引次数、开放获取 PDF 和缺失的摘要来自 <a href="https://openalex.org/">OpenAlex</a>；缩略图直接链接到 arXiv、Springer Nature 和 APS 网站上的原图。</p>
+    <p>作者只列出前 3 位、末 2 位和通讯作者，中间用 … 省略；粗体加 * 是数据库标注的通讯作者，没有标注时粗体表示末位作者（通常是通讯作者）。深色标签是 Nature、Science 及其子刊、PRL、Advanced Materials 等顶刊。</p>
     <p>中文要点、主题和关键词由 Claude 自动生成，可能有误，请以原文为准。收藏和已读记录只保存在你自己的浏览器里。</p>
   </footer>
 </div>
@@ -184,6 +189,28 @@ const TMAP = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 const KMAP = Object.fromEntries((CONFIG.keywords || []).map(k => [k.id, k]));
 const SOURCES = CONFIG.sources;
 const SMAP = Object.fromEntries(SOURCES.map(s => [s.id, s]));
+const START_MS = new Date((DATA.start || CONFIG.start_date || '2026-01-01') + 'T00:00:00+08:00').getTime();
+/* papers older than the 31-day window live in archive/YYYY-MM.json and are loaded only when needed */
+const loadedMonths = new Set(); let archIndex = null, archBusy = null;
+async function ensureArchive(){
+  const days = prefs.days;
+  const needAll = prefs.status === 'star' ? false : days > 30 || (prefs.q && prefs.q.trim().length > 1 && days >= 30);
+  if (!needAll) return;
+  if (archBusy) return archBusy;
+  archBusy = (async () => {
+    try {
+      archIndex ||= await fetch('archive/index.json', { cache:'no-cache' }).then(r => r.json());
+      const cutoff = days >= 9999 ? START_MS : NOW - days * DAY;
+      const want = archIndex.months.map(x => x.m).filter(m => !loadedMonths.has(m) && new Date(m + '-01T00:00:00+08:00').getTime() + 31 * DAY > cutoff && new Date(m + '-01T00:00:00+08:00').getTime() < NOW - 28 * DAY);
+      if (!want.length) return;
+      $('#loadNote').textContent = `正在载入 ${want.length} 个月的历史论文…`;
+      const res = await Promise.all(want.map(m => fetch(`archive/${m}.json`).then(r => r.json()).catch(() => null)));
+      res.forEach((d, i) => { if (d) { addPapers(d.papers || []); loadedMonths.add(want[i]); } });
+    } catch (e) { console.warn('archive load failed', e); }
+    finally { $('#loadNote').textContent = ''; archBusy = null; }
+  })();
+  return archBusy;
+}
 
 /* ---------- storage ---------- */
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
@@ -195,6 +222,7 @@ const defOff = CONFIG.default_off || [];
 if (!Array.isArray(prefs.off)) prefs.off = [...defOff];
 const known = new Set(prefs.known || ['arxiv','nature','nphoton','nnano','nphys','nmat','ncomms','lsa','elight','science','sciadv','nanolett','acsphot','acsnano','optica','prj','ol','prl','prx','lpr','adma','adom','ap','nanoph','oea']);
 for (const s of SOURCES) if (!known.has(s.id) && defOff.includes(s.id) && !prefs.off.includes(s.id)) prefs.off.push(s.id);
+if (!prefs.mig2) { prefs.off = prefs.off.filter(x => !['prb','apl','adma'].includes(x)); prefs.mig2 = 1; }  // physics journals now on by default
 prefs.known = SOURCES.map(s => s.id);
 prefs.topics = prefs.topics.filter(t => TMAP[t]);
 const persist = () => { save(LS.state, state); save(LS.prefs, prefs); };
@@ -237,6 +265,7 @@ const titleIdx = new Map();
 const srcInfo = Object.fromEntries(SOURCES.map(s => [s.id, { n:0, err:null }]));
 function addPapers(list){
   for (const p of list) {
+    if (papers.has(p.key)) continue;
     const nt = normTitle(p.title);
     const dupKey = titleIdx.get(nt);
     if (dupKey && dupKey !== p.key) {
@@ -257,12 +286,12 @@ const pickScore = p => (p.rel === 2 ? 2 : p.rel === 1 ? 0.6 : 1) + (SMAP[p.src]?
 
 /* ---------- filtering ---------- */
 function view(){
-  const cutoff = prefs.days === 1 ? new Date(new Date().setHours(0,0,0,0)).getTime() - DAY * 0 : NOW - prefs.days*DAY;
+  const cutoff = prefs.days === 1 ? new Date(new Date().setHours(0,0,0,0)).getTime() : prefs.days >= 9999 ? START_MS : NOW - prefs.days*DAY;
   const q = prefs.q.trim().toLowerCase();
   const off = new Set(prefs.off);
   const base = [...papers.values()];
   for (const [k, snap] of Object.entries(state.star)) if (!papers.has(k) && snap && typeof snap === 'object') base.push(Object.assign({ rt:[], abs:'', _s:'' }, snap, { key:k }));
-  const inScope = base.filter(p => !off.has(p.src) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
+  const inScope = base.filter(p => !off.has(p.src) && (!prefs.topOnly || SMAP[p.src]?.top) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
   const rel = inScope.filter(p => isRelevant(p) || state.star[p.key]);
   const hidden = inScope.length - rel.length;
   let pool = prefs.showHidden ? inScope : rel;
@@ -282,10 +311,12 @@ let raf = 0, limit = 60;
 const schedule = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
 
 function renderSpectrum(v){
-  const span = prefs.status === 'star' ? Math.max(prefs.days, Math.ceil((NOW - Math.min(NOW, ...v.pool.map(p => p.ts))) / DAY)) : Math.max(prefs.days, 1);
+  const allDays = Math.ceil((NOW - START_MS) / DAY);
+  const span = prefs.status === 'star' ? Math.max(7, Math.ceil((NOW - Math.min(NOW, ...v.pool.map(p => p.ts))) / DAY)) : Math.min(Math.max(prefs.days, 1), allDays);
   const start = NOW - span*DAY;
   const sel = prefs.topics;
   let h = '';
+  if (span > 31) return renderDensity(v, span, start);
   for (let d = 1; d < span; d++) { const x = (d/span)*1000; h += `<rect x="${x.toFixed(1)}" y="0" width="0.6" height="78" fill="#E3E8EB"/>`; }
   const w = v.pool.length > 600 ? 1.4 : 2.2;
   for (const p of [...v.pool].sort((a,b) => a.ts - b.ts)) {
@@ -302,10 +333,38 @@ function renderSpectrum(v){
   $('#axis').innerHTML = `<span>${fmtDate(start)}</span><span>${fmtDate(start + span*DAY/2)}</span><span>现在</span>`;
 }
 
+function renderDensity(v, span, start){
+  // long ranges: one stacked column per day instead of one line per paper
+  const sel = prefs.topics, cols = {}, ids = TOPICS.map(t => t.id);
+  for (const p of v.pool) {
+    const d = Math.floor((p.ts - start) / DAY); if (d < 0 || d >= span) continue;
+    const tps = topicsOf(p);
+    const tid = (sel.length ? tps.find(t => sel.includes(t)) : null) || tps.find(t => t !== 'ai') || tps[0] || '_';
+    const on = !sel.length || tps.some(t => sel.includes(t));
+    const c = (cols[d] ||= {}); const key = on ? tid : '_'; c[key] = (c[key] || 0) + 1;
+  }
+  const max = Math.max(1, ...Object.values(cols).map(c => Object.values(c).reduce((a, b) => a + b, 0)));
+  const w = 1000 / span; let h = '';
+  for (let m = new Date(start); m.getTime() < NOW; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+    const x = ((new Date(m.getFullYear(), m.getMonth(), 1).getTime() - start) / (span * DAY)) * 1000;
+    if (x > 0) h += `<rect x="${x.toFixed(1)}" y="0" width="0.8" height="78" fill="#D5DCE1"/>`;
+  }
+  for (const [d, c] of Object.entries(cols)) {
+    let y = 78; const x = d * w; const tot = Object.values(c).reduce((a, b) => a + b, 0);
+    for (const id of [...ids, '_']) {
+      const n = c[id]; if (!n) continue;
+      const hh = (n / max) * 74; y -= hh;
+      h += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${Math.max(0.6, w - 0.35).toFixed(2)}" height="${hh.toFixed(2)}" fill="${id === '_' ? '#C3CBD1' : TMAP[id].color}" opacity=".88"><title>${fmtDate(start + d * DAY)}：${tot} 篇</title></rect>`;
+    }
+  }
+  $('#spec').innerHTML = h;
+  $('#axis').innerHTML = `<span>${fmtDate(start)}</span><span>${fmtDate(start + span*DAY/2)}</span><span>现在（每根柱子是一天，高度是论文数）</span>`;
+}
+
 function renderLegend(v){
   const sel = prefs.topics;
   $('#legend').innerHTML = TOPICS.map(t => `<button class="lg" style="--c:${t.color}" data-t="${t.id}" aria-pressed="${sel.includes(t.id)}"><i style="background:${t.color}"></i>${t.name}<span class="n">${v.topicCounts[t.id]}</span></button>`).join('') +
-    `<span class="hint">${sel.length ? '<button class="lg" data-t="__clear">清除主题筛选</button>' : '点击主题筛选，可多选；竖线越高越重要：收藏 &gt; 顶刊 &gt; 期刊 &gt; arXiv'}</span>`;
+    `<span class="hint">${sel.length ? '<button class="lg" data-t="__clear">清除主题筛选</button>' : (prefs.days > 31 ? '点击主题筛选，可多选；每根柱子是一天，颜色是主题' : '点击主题筛选，可多选；竖线越高越重要：收藏 &gt; 顶刊 &gt; 期刊 &gt; 预印本')}</span>`;
 }
 
 function renderSources(){
@@ -317,7 +376,7 @@ function renderSources(){
     const tail = inf.err ? `<span class="bad" title="${esc(inf.err)}">本次抓取失败</span>` : `<span class="n">${inf.n}</span>`;
     return `<label><input type="checkbox" data-s="${s.id}" ${off.has(s.id)?'':'checked'}>${esc(s.name)} ${tail}</label>`;
   }).join('')}</div>`).join('') +
-  `<div class="foot2"><button class="btn" data-sa="all">全选</button><button class="btn" data-sa="def">恢复默认</button><button class="btn" data-sa="core">只看 arXiv、Nature 子刊和光学期刊</button><button class="btn" data-sa="hidden">${prefs.showHidden ? '隐藏' : '显示'}判定为无关的论文</button></div>`;
+  `<div class="foot2"><button class="btn" data-sa="all">全选</button><button class="btn" data-sa="def">恢复默认</button><button class="btn" data-sa="core">只看预印本、Nature 子刊和光学期刊</button><button class="btn" data-sa="hidden">${prefs.showHidden ? '隐藏' : '显示'}判定为无关的论文</button></div>`;
 }
 
 function itemHTML(p){
@@ -327,13 +386,14 @@ function itemHTML(p){
   const src = p.src === 'arxiv' ? `<span class="src ax">arXiv${p.sub ? ' ' + esc(p.sub) : ''}</span>` : `<span class="src${SMAP[p.src]?.top ? ' top1' : ''}">${esc(p.journal)}</span>`;
   const links = [`<a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${p.src==='arxiv'?'arXiv 页面':'期刊页面'}</a>`];
   if (p.pdf) links.push(`<a href="${esc(p.pdf)}" target="_blank" rel="noopener" data-open="1">PDF</a>`);
+  if (p.oa) links.push(`<a href="${esc(p.oa)}" target="_blank" rel="noopener" data-open="1">开放获取 PDF</a>`);
   if (p.arxiv && p.src !== 'arxiv') links.push(`<a href="${esc(p.arxiv)}" target="_blank" rel="noopener" data-open="1">arXiv 版本</a>`);
   const kws = (p.ak && p.ak.length ? p.ak : (p.kw || []).map(k => KMAP[k]?.name).filter(Boolean)).slice(0, 4);
   const thumb = p.img ? `<button class="thumb" data-img="${esc(p.img)}" aria-label="查看大图" style="background-image:url('${esc(p.img).replace(/'/g, '%27')}')"></button>` : '';
   return `<article class="item${read?' read':''}" id="i-${esc(p.key)}" data-k="${esc(p.key)}">
     <div class="lines" aria-hidden="true">${stripes}</div>
     <div class="body">
-      <div class="top">${src}<time>${fmtDate(p.ts)}</time></div>
+      <div class="top">${src}<time>${fmtDate(p.ts)}</time>${p.cc ? `<span class="cc" title="OpenAlex 统计的被引次数">被引 ${p.cc}</span>` : ''}</div>
       <h3 class="t"><a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${esc(p.title)}</a></h3>
       ${p.zh ? `<p class="zh">${esc(p.zh)}</p>` : ''}
       <p class="au">${authorsHTML(p)}</p>
@@ -356,10 +416,11 @@ function render(){
   const v = view();
   renderSpectrum(v); renderLegend(v);
   if ($('#srcpanel').classList.contains('open')) renderSources();
+  $('#topBtn').setAttribute('aria-pressed', String(!!prefs.topOnly));
   for (const [id, key] of [['#segDays','days'],['#segStatus','status'],['#segSort','sort']])
     for (const b of document.querySelectorAll(id + ' button')) b.setAttribute('aria-pressed', String(String(prefs[key]) === b.dataset.v));
   const unread = v.pool.filter(p => !state.read[p.key]).length;
-  const label = prefs.days === 1 ? '今天' : `过去 ${prefs.days} 天`;
+  const label = prefs.days === 1 ? '今天' : prefs.days >= 9999 ? `${new Date(START_MS).getFullYear()} 年 ${new Date(START_MS).getMonth() + 1} 月 ${new Date(START_MS).getDate()} 日以来` : `过去 ${prefs.days} 天`;
   $('#sub').innerHTML = prefs.status === 'star' ? `收藏夹里有 <b>${v.pool.length}</b> 篇论文` : `${label}有 <b>${v.pool.length}</b> 篇相关论文，其中 <b>${unread}</b> 篇未读`;
   $('#count').textContent = `显示 ${Math.min(limit, v.shown.length)} / ${v.shown.length} 篇` + (v.hidden && !prefs.showHidden ? `，另有 ${v.hidden} 篇判定为无关已隐藏` : '');
   updateStatus();
@@ -399,7 +460,7 @@ function updateStatus(){
 }
 
 /* ---------- interactions ---------- */
-const snapshot = p => ({ src:p.src, journal:p.journal, sub:p.sub, title:p.title, abs:p.abs, au:p.au, na:p.na, authors:p.au ? undefined : p.authors, ts:p.ts, url:p.url, pdf:p.pdf, arxiv:p.arxiv, rt:p.rt, tp:p.tp, zh:p.zh, img:p.img });
+const snapshot = p => ({ cc:p.cc, oa:p.oa, src:p.src, journal:p.journal, sub:p.sub, title:p.title, abs:p.abs, au:p.au, na:p.na, authors:p.au ? undefined : p.authors, ts:p.ts, url:p.url, pdf:p.pdf, arxiv:p.arxiv, rt:p.rt, tp:p.tp, zh:p.zh, img:p.img });
 const findPaper = k => papers.get(k) || (state.star[k] && Object.assign({ key:k }, state.star[k]));
 const markRead = (k, v = true) => { if (v) state.read[k] = 1; else delete state.read[k]; persist(); };
 
@@ -416,14 +477,15 @@ document.addEventListener('click', e => {
   }
   if (t.matches('.kchip')) { prefs.q = t.dataset.q; $('#q').value = prefs.q; limit = 60; persist(); render(); window.scrollTo({ top: $('#controls').offsetTop, behavior:'smooth' }); return; }
   if (t.matches('.thumb')) { const box = $('#lightbox'); const im = box.querySelector('img'); im.referrerPolicy = 'no-referrer'; im.src = t.dataset.img; box.classList.add('open'); return; }
-  if (t.closest('#segDays')) { prefs.days = +t.dataset.v; if (prefs.status === 'star') prefs.status = 'all'; limit = 60; persist(); render(); return; }
+  if (t.closest('#segDays')) { prefs.days = +t.dataset.v; if (prefs.status === 'star') prefs.status = 'all'; limit = 60; persist(); ensureArchive().then(render); render(); return; }
+  if (t.id === 'topBtn') { prefs.topOnly = !prefs.topOnly; limit = 60; persist(); render(); return; }
   if (t.closest('#segStatus')) { prefs.status = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.closest('#segSort')) { prefs.sort = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.id === 'srcBtn') { const p = $('#srcpanel'); p.classList.toggle('open'); t.setAttribute('aria-expanded', String(p.classList.contains('open'))); renderSources(); return; }
   if (t.dataset.sa) {
     if (t.dataset.sa === 'all') prefs.off = [];
     if (t.dataset.sa === 'def') prefs.off = [...defOff];
-    if (t.dataset.sa === 'core') prefs.off = SOURCES.filter(s => !['arXiv','Nature 子刊','光学'].includes(s.group)).map(s => s.id);
+    if (t.dataset.sa === 'core') prefs.off = SOURCES.filter(s => !['预印本','Nature 子刊','光学'].includes(s.group)).map(s => s.id);
     if (t.dataset.sa === 'hidden') prefs.showHidden = !prefs.showHidden;
     persist(); renderSources(); render(); return;
   }
@@ -454,7 +516,7 @@ document.addEventListener('change', e => {
 });
 let qT = 0;
 $('#q').value = prefs.q;
-$('#q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { prefs.q = e.target.value; limit = 60; persist(); render(); }, 160); });
+$('#q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { prefs.q = e.target.value; limit = 60; persist(); render(); ensureArchive().then(render); }, 160); });
 const ctl = $('#controls');
 new IntersectionObserver(([en]) => ctl.classList.toggle('stuck', en.intersectionRatio < 1), { threshold:[1], rootMargin:'-1px 0px 0px 0px' }).observe(ctl);
 // deep link: index.html?q=keyword
@@ -467,6 +529,7 @@ addPapers(DATA.papers || []);
 for (const k of Object.keys(state.star)) if (papers.has(k)) state.star[k] = snapshot(papers.get(k));
 persist();
 render();
+ensureArchive().then(render);
 })();
 </script>
 </body>

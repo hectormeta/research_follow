@@ -76,11 +76,12 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
 
   <div class="controls">
     <span class="lbl">时间</span>
-    <div class="seg" id="segRange"><button data-v="7">7 天</button><button data-v="14">14 天</button><button data-v="30">30 天</button><button data-v="all">全部历史</button></div>
+    <div class="seg" id="segRange"><button data-v="7">7 天</button><button data-v="14">14 天</button><button data-v="30">30 天</button><button data-v="90">90 天</button><button data-v="all">全部（自 1 月 1 日）</button></div>
     <span class="lbl">来源</span>
     <div class="seg" id="segSrc"><button data-v="all">全部</button><button data-v="arxiv">arXiv</button><button data-v="journal">期刊</button><button data-v="top">顶刊</button></div>
-    <span class="lbl">曲线</span>
+    <span class="lbl" id="lblSmooth">曲线</span>
     <div class="seg" id="segSmooth"><button data-v="1">按天</button><button data-v="7">7 日平均</button></div>
+    <span class="lbl" id="loadNote"></span>
   </div>
 
   <div class="grid">
@@ -97,7 +98,7 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
     </section>
 
     <section class="card c7">
-      <h2>各方向论文数</h2><p class="desc">每天新出现的相关论文，按主题堆叠。一篇论文可以属于多个主题。点下面的主题可以隐藏或显示。</p>
+      <h2>各方向论文数</h2><p class="desc" id="topicsDesc">新出现的相关论文，按主题堆叠（30 天以内按天，更长按周）。一篇论文可以属于多个主题。点下面的主题可以隐藏或显示。</p>
       <div class="lgh" id="lgTopics"></div>
       <div class="chart" id="cTopics"></div>
     </section>
@@ -117,11 +118,16 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
       <div class="chart tall" id="cGraph"></div>
     </section>
     <section class="card c5">
-      <h2>Claude 提取的具体关键词</h2><p class="desc">每篇论文由 Claude 标注 2–4 个具体关键词，字越大出现越多。点一下加入自由探索。</p>
-      <div class="cloud" id="cloud"></div>
+      <h2>期刊与方向</h2><p class="desc">论文最多的 16 个来源各自偏重哪些方向：每一行是一个来源，颜色越深表示该来源中这个方向的论文占比越高。点格子在列表页查看。</p>
+      <div class="chart tall" id="cVenue"></div>
+    </section>
+
+    <section class="card c12">
+      <h2>关键词逐月热度</h2><p class="desc">2026 年 1 月以来，30 个最常见具体关键词在每个月相关论文中所占的比例（全部来源）。每一行单独着色，颜色越深表示这个关键词在当月越热；行按热度最高的月份排序，越往上是越新近升温的方向。点格子加入自由探索。</p>
+      <div class="chart" id="cHeat"></div>
     </section>
   </div>
-  <p class="note">数据每天自动更新；趋势历史从 2026 年 11 月开始逐日积累，30 天以内的图表直接由当前论文计算。为了让不同日期可比，图表里的主题都按同一套关键词规则判定（列表页的主题标签部分来自 Claude，可能略有不同）。关键词由规则词表和 Claude 标注共同得到，计数是包含该关键词的论文篇数。图表使用开源库 Apache ECharts。</p>
+  <p class="note">数据每天自动更新，收录 2026 年 1 月 1 日以来的论文；选择 90 天或全部时会额外载入历史数据，第一次需要几秒。为了让不同日期可比，图表里的主题都按同一套关键词规则判定（列表页的主题标签部分来自 Claude，可能略有不同）。关键词由规则词表和 Claude 标注共同得到，计数是包含该关键词的论文篇数。图表使用开源库 Apache ECharts。</p>
 </div>
 
 <script>
@@ -148,30 +154,59 @@ const short = s => s.slice(5).replace('-', '/');
 
 // Charts use the keyword-rule topics for every paper, so counts stay comparable across days
 // (Claude's topic/relevance labels exist only for recent papers).
-const papers = (DATA.papers || []).filter(p => p.rt && p.rt.length).map(p => {
-  p.tps = p.rt.filter(t => TMAP[t]);
+const prep = p => {
+  p.tps = (p.ta || p.rt).filter(t => TMAP[t]);   // title-only topics where the archive had no abstract
   p.day = dstr(p.ts);
   p.kn = (p.kw || []).map(k => KMAP[k]?.name).filter(Boolean);
   p._s = (p.title + ' ' + (p.abs || '') + ' ' + (p.zh || '') + ' ' + (p.ak || []).join(' ') + ' ' + p.kn.join(' ')).toLowerCase();
   return p;
-});
+};
+const START_MS = new Date((DATA.start || CONFIG.start_date || '2026-01-01') + 'T00:00:00+08:00').getTime();
+const inTrend = p => SMAP[p.src]?.trend !== false && (p.ta || p.rt || []).length > 0;
+let papers = (DATA.papers || []).filter(inTrend).map(prep);
+const seenKeys = new Set(papers.map(p => p.key));
+const loadedMonths = new Set(); let archIndex = null;
+async function ensureArchive(days){
+  if (days <= 31) return;
+  archIndex ||= await fetch('archive/index.json', { cache:'no-cache' }).then(r => r.json()).catch(() => ({ months:[] }));
+  const cutoff = NOW - days * DAY;
+  const want = archIndex.months.map(x => x.m).filter(m => !loadedMonths.has(m) && new Date(m + '-01T00:00:00+08:00').getTime() + 31 * DAY > cutoff);
+  if (!want.length) return;
+  $('#loadNote').textContent = `正在载入 ${want.length} 个月的历史论文…`;
+  const res = await Promise.all(want.map(m => fetch(`archive/${m}.json`).then(r => r.json()).catch(() => null)));
+  res.forEach((d, i) => { if (!d) return; loadedMonths.add(want[i]); for (const p of d.papers || []) if (inTrend(p) && !seenKeys.has(p.key)) { seenKeys.add(p.key); papers.push(prep(p)); } });
+  $('#loadNote').textContent = '';
+}
 const prefs = Object.assign({ range:'14', src:'all', smooth:'7' }, JSON.parse(localStorage.getItem('nanoradar.explore') || '{}'));
 let terms = JSON.parse(localStorage.getItem('nanoradar.terms') || 'null');
 const persist = () => { try { localStorage.setItem('nanoradar.explore', JSON.stringify(prefs)); localStorage.setItem('nanoradar.terms', JSON.stringify(terms)); } catch {} };
 
-$('#sub').textContent = `基于近 31 天 ${papers.length} 篇相关论文（arXiv 与 ${CONFIG.sources.length - 1} 种期刊），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}。`;
+const setSub = () => $('#sub').textContent = `当前载入 ${papers.length} 篇相关论文（${CONFIG.sources.filter(s => s.preprint).length} 个预印本平台与 ${CONFIG.sources.filter(s => !s.preprint).length} 种期刊，${loadedMonths.size ? '含 2026 年 1 月以来的历史数据' : '近 31 天'}），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}。`;
+setSub();
 
 const charts = {};
 const chart = id => (charts[id] ||= echarts.init(document.getElementById(id), null, { renderer:'canvas' }));
 window.addEventListener('resize', () => Object.values(charts).forEach(c => c.resize()));
 const baseText = { fontFamily: getComputedStyle(document.body).fontFamily, color:'#45515E' };
 
-function srcOk(p){ if (prefs.src === 'all') return true; if (prefs.src === 'arxiv') return p.src === 'arxiv'; if (prefs.src === 'top') return !!SMAP[p.src]?.top; return p.src !== 'arxiv'; }
-function rangeDays(){ return prefs.range === 'all' ? 30 : +prefs.range; }
+function srcOk(p){ if (prefs.src === 'all') return true; if (prefs.src === 'arxiv') return !!SMAP[p.src]?.preprint; if (prefs.src === 'top') return !!SMAP[p.src]?.top; return p.src !== 'arxiv'; }
+function rangeDays(){ return prefs.range === 'all' ? Math.ceil((NOW - START_MS) / DAY) : +prefs.range; }
+const weekly = () => rangeDays() > 31;
+const monday = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+// bucket = day (<= 31 days) or ISO week (longer ranges)
+function bucketList(n){
+  if (!weekly()) return daysList(n + LB());
+  const out = []; for (let t = firstWeek(n); t <= NOW - 3 * DAY; t += 7 * DAY) out.push(dstr(t)); return out;
+}
+// first Monday on/after the range start (so the first week is complete); the current week is shown once 3 days have passed
+function firstWeek(n){ const s = Math.max(NOW - n * DAY, START_MS); const m = monday(s); return m < s - 3600e3 ? m + 7 * DAY : m; }
+const bucketOf = p => weekly() ? dstr(monday(p.ts)) : p.day;
+const bucketLabel = b => weekly() ? short(b) + ' 周' : short(b);
+const sm = arr => weekly() ? arr : smooth(arr);
 function daysList(n, endTs = NOW){ const out = []; for (let i = n - 1; i >= 0; i--) out.push(dstr(endTs - i * DAY)); return out; }
 const LB = () => (+prefs.smooth > 1 ? +prefs.smooth - 1 : 0);   // extra look-back days for the moving average
 function smooth(arr){ const w = +prefs.smooth; if (w <= 1) return arr; const out = arr.map((_, i) => { const s = arr.slice(Math.max(0, i - w + 1), i + 1); return +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(2); }); return out.slice(LB()); }
-function inRange(p, n){ return NOW - p.ts < n * DAY; }
+function inRange(p, n){ return weekly() ? p.ts >= firstWeek(n) : NOW - p.ts < n * DAY; }
 
 /* ---------- term matching ---------- */
 const kwByName = Object.fromEntries(KW.map(k => [k.name.toLowerCase(), k.id]));
@@ -179,7 +214,7 @@ const topicByName = Object.fromEntries(TOPICS.map(t => [t.name, t.id]));
 function matcher(term){
   const t = term.trim(); const lo = t.toLowerCase();
   if (topicByName[t]) { const id = topicByName[t]; return p => p.tps.includes(id); }
-  if (kwByName[lo]) { const id = kwByName[lo]; const words = lo.split(/\s*\/\s*/); return p => (p.kw || []).includes(id) || words.some(w => p._s.includes(w)); }
+  if (kwByName[lo]) { const id = kwByName[lo]; const words = lo.split(/\s*\/\s*/); return p => kwOf(p).includes(id) || words.some(w => p._s.includes(w)); }
   const parts = lo.split(/\s+/).filter(Boolean);
   return p => parts.every(w => p._s.includes(w));
 }
@@ -190,37 +225,37 @@ function renderTerms(totals = {}){
   $('#terms').innerHTML = terms.map((t, i) => `<span class="term" style="--c:${TERM_COLORS[i % TERM_COLORS.length]}">${esc(t)}${totals[t] !== undefined ? ` <span class="n">${totals[t]} 篇</span>` : ''}<button data-rm="${i}" aria-label="移除 ${esc(t)}">×</button></span>`).join('') || '<span class="lbl">还没有关键词，在右上方输入或点下面图表里的关键词。</span>';
 }
 function renderExplore(){
-  const n = rangeDays(); const days = daysList(n); const ext = daysList(n + LB());
+  const n = rangeDays(); const ext = bucketList(n); const days = weekly() ? ext : ext.slice(LB());
   const pool = papers.filter(p => srcOk(p) && inRange(p, n));
-  const poolX = papers.filter(p => srcOk(p) && inRange(p, n + LB()));
+  const poolX = weekly() ? pool : papers.filter(p => srcOk(p) && inRange(p, n + LB()));
   const totals = {};
   const series = terms.map((t, i) => {
     const m = matcher(t); const cnt = Object.fromEntries(ext.map(d => [d, 0]));
-    for (const p of poolX) if (m(p) && cnt[p.day] !== undefined) cnt[p.day]++;
+    for (const p of poolX) { const b = bucketOf(p); if (m(p) && cnt[b] !== undefined) cnt[b]++; }
     const total = days.reduce((a, d) => a + cnt[d], 0);
     totals[t] = total;
-    return { name:t, term:t, type:'line', smooth:true, symbolSize:6, showSymbol:true, data:smooth(ext.map(d => cnt[d])), lineStyle:{ width:2.4 }, itemStyle:{ color:TERM_COLORS[i % TERM_COLORS.length] } };
+    return { name:t, term:t, type:'line', smooth:true, symbolSize:6, showSymbol:true, data:sm(ext.map(d => cnt[d])), lineStyle:{ width:2.4 }, itemStyle:{ color:TERM_COLORS[i % TERM_COLORS.length] } };
   });
   chart('cExplore').setOption({
     textStyle: baseText, grid:{ left:8, right:16, top:12, bottom:8, containLabel:true }, tooltip:{ trigger:'axis', confine:true },
-    xAxis:{ type:'category', data:days.map(short), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
-    yAxis:{ type:'value', minInterval: prefs.smooth === '7' ? 0 : 1, splitLine:{ lineStyle:{ color:'#EEF2F4' } } },
+    xAxis:{ type:'category', data:days.map(bucketLabel), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
+    yAxis:{ type:'value', minInterval: prefs.smooth === '7' && !weekly() ? 0 : 1, splitLine:{ lineStyle:{ color:'#EEF2F4' } } },
     series
   }, true);
   renderTerms(totals);
-  $('#capExplore').textContent = terms.length ? (prefs.smooth === '7' ? '每天论文数（7 日平均）' : '每天论文数') : '';
+  $('#capExplore').textContent = terms.length ? (weekly() ? '每周论文数' : prefs.smooth === '7' ? '每天论文数（7 日平均）' : '每天论文数') : '';
   // list
   const ms = (selTerm ? [selTerm] : terms).map(matcher);
   let list = pool.filter(p => ms.some(m => m(p)));
-  if (selDay) list = list.filter(p => p.day === selDay);
+  if (selDay) list = list.filter(p => bucketOf(p) === selDay);
   list.sort((a, b) => b.ts - a.ts);
-  $('#plTitle').textContent = terms.length ? `${selTerm ? '“' + selTerm + '”' : '全部关键词'}${selDay ? '，' + selDay.slice(5) : `，近 ${n} 天`}：${list.length} 篇${list.length > 40 ? '，显示最新 40 篇' : ''}${selDay || selTerm ? '（点空白处取消筛选）' : ''}` : '';
+  $('#plTitle').textContent = terms.length ? `${selTerm ? '“' + selTerm + '”' : '全部关键词'}${selDay ? '，' + bucketLabel(selDay) : prefs.range === 'all' ? '，1 月 1 日以来' : `，近 ${n} 天`}：${list.length} 篇${list.length > 40 ? '，显示最新 40 篇' : ''}${selDay || selTerm ? '（点空白处取消筛选）' : ''}` : '';
   $('#plOpen').href = './?q=' + encodeURIComponent(selTerm || terms[0] || '');
   $('#plOpen').style.display = terms.length ? '' : 'none';
   $('#plist').innerHTML = list.slice(0, 40).map(p => `<div class="it"><a class="tt" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>
     <div class="m"><b>${esc(p.src === 'arxiv' ? 'arXiv' : SMAP[p.src]?.name || p.src)}</b>　${p.day.slice(5)}　${p.tps.map(t => TMAP[t].name).join('、')}</div>${p.zh ? `<div class="z">${esc(p.zh)}</div>` : ''}</div>`).join('');
 }
-chart('cExplore').on('click', e => { selDay = daysList(rangeDays())[e.dataIndex]; selTerm = terms[e.seriesIndex]; renderExplore(); });
+chart('cExplore').on('click', e => { const ext = bucketList(rangeDays()); selDay = (weekly() ? ext : ext.slice(LB()))[e.dataIndex]; selTerm = terms[e.seriesIndex]; renderExplore(); });
 chart('cExplore').getZr().on('click', e => { if (!e.target) { selDay = null; selTerm = null; renderExplore(); } });
 function addTerm(t){ t = String(t || '').trim(); if (!t) return; if (!terms.includes(t)) { terms.push(t); if (terms.length > 8) terms.shift(); } selDay = null; selTerm = null; persist(); renderExplore(); $('#exploreCard').scrollIntoView({ behavior:'smooth', block:'start' }); }
 $('#adder').addEventListener('submit', e => { e.preventDefault(); addTerm($('#termIn').value); $('#termIn').value = ''; });
@@ -229,44 +264,43 @@ $('#terms').addEventListener('click', e => { const b = e.target.closest('[data-r
 /* ---------- topics over time ---------- */
 const hidTopics = new Set();
 function renderTopics(){
-  let days, rows;
-  if (prefs.range === 'all') {
-    const td = TRENDS.days || {};
-    const all = Object.keys(td).sort(); days = all.slice(LB());
-    rows = TOPICS.map(t => all.map(d => (td[d]?.t || {})[t.id] || 0));
-  } else {
-    const n = rangeDays(); days = daysList(n); const ext = daysList(n + LB());
-    const idx = Object.fromEntries(ext.map((d, i) => [d, i]));
-    rows = TOPICS.map(() => ext.map(() => 0));
-    const ti = Object.fromEntries(TOPICS.map((t, i) => [t.id, i]));
-    for (const p of papers) if (srcOk(p) && idx[p.day] !== undefined) for (const t of p.tps) rows[ti[t]][idx[p.day]]++;
-  }
+  const n = rangeDays(); const ext = bucketList(n); const days = weekly() ? ext : ext.slice(LB());
+  const idx = Object.fromEntries(ext.map((d, i) => [d, i]));
+  const rows = TOPICS.map(() => ext.map(() => 0));
+  const ti = Object.fromEntries(TOPICS.map((t, i) => [t.id, i]));
+  for (const p of papers) { const b = idx[bucketOf(p)]; if (srcOk(p) && b !== undefined) for (const t of p.tps) rows[ti[t]][b]++; }
+  if (weekly() && ext.length && ext[ext.length - 1] === dstr(monday(NOW))) { const frac = Math.min(7, (NOW - monday(NOW)) / DAY) / 7; rows.forEach(r => { r[r.length - 1] = +(r[r.length - 1] / frac).toFixed(1); }); }
   chart('cTopics').setOption({
     textStyle: baseText, color: TOPICS.map(t => t.color), tooltip:{ trigger:'axis', order:'valueDesc', confine:true },
     legend:{ show:false, selected:Object.fromEntries(TOPICS.map(t => [t.name, !hidTopics.has(t.name)])) }, grid:{ left:8, right:16, top:12, bottom:8, containLabel:true },
-    xAxis:{ type:'category', boundaryGap:false, data:days.map(short), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
+    xAxis:{ type:'category', boundaryGap:false, data:days.map(bucketLabel), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
     yAxis:{ type:'value', splitLine:{ lineStyle:{ color:'#EEF2F4' } } },
-    series: TOPICS.map((t, i) => ({ name:t.name, type:'line', stack:'all', smooth:true, symbol:'none', areaStyle:{ opacity:.82 }, lineStyle:{ width:0 }, emphasis:{ focus:'series' }, data:smooth(rows[i]) }))
+    series: TOPICS.map((t, i) => ({ name:t.name, type:'line', stack:'all', smooth:true, symbol:'none', areaStyle:{ opacity:.82 }, lineStyle:{ width:0 }, emphasis:{ focus:'series' }, data:sm(rows[i]) }))
   }, true);
   $('#lgTopics').innerHTML = TOPICS.map(t => `<button data-n="${esc(t.name)}" class="${hidTopics.has(t.name) ? 'off' : ''}"><i style="background:${t.color}"></i>${esc(t.name)}</button>`).join('');
 }
 $('#lgTopics').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; const n = b.dataset.n; hidTopics.has(n) ? hidTopics.delete(n) : hidTopics.add(n); renderTopics(); });
 
 /* ---------- rising keywords ---------- */
-function kwCounts(pool){ const c = {}; for (const p of pool) for (const k of p.kw || []) c[k] = (c[k] || 0) + 1; return c; }
+const kwOf = p => p.tk || p.kw || [];   // title-only keywords where the archive had no abstract
+function kwCounts(pool){ const c = {}; for (const p of pool) for (const k of kwOf(p)) c[k] = (c[k] || 0) + 1; return c; }
 function renderRise(){
-  const n = Math.min(rangeDays(), 15);
+  const R = rangeDays(); const long = R > 31;
+  const n = long ? 30 : Math.min(R, 15);
   const cur = kwCounts(papers.filter(p => srcOk(p) && NOW - p.ts < n * DAY));
-  const prev = kwCounts(papers.filter(p => srcOk(p) && NOW - p.ts >= n * DAY && NOW - p.ts < 2 * n * DAY));
-  $('#riseDesc').textContent = `近 ${n} 天与之前 ${n} 天相比，按增长排序（至少 3 篇）。点一下加入自由探索。`;
+  // short ranges: previous period of the same length; long ranges: average 30-day rate over the rest of the range
+  const span = long ? Math.max(n, Math.min(R, (NOW - START_MS) / DAY) - n) : n;
+  const prevRaw = kwCounts(papers.filter(p => srcOk(p) && NOW - p.ts >= n * DAY && NOW - p.ts < (n + span) * DAY));
+  const prev = Object.fromEntries(Object.entries(prevRaw).map(([k, v]) => [k, +(v * n / span).toFixed(1)]));
+  $('#riseDesc').textContent = long ? `近 30 天与此前每 30 天的平均水平相比，按增长排序（至少 3 篇）。点一下加入自由探索。` : `近 ${n} 天与之前 ${n} 天相比，按增长排序（至少 3 篇）。点一下加入自由探索。`;
   const rows = Object.keys(cur).filter(k => cur[k] >= 3).map(k => ({ k, c:cur[k], p:prev[k] || 0, g:(cur[k] + 1) / ((prev[k] || 0) + 1) }))
     .sort((a, b) => b.g - a.g || b.c - a.c).slice(0, 15).reverse();
   chart('cRise').setOption({
     textStyle: baseText, grid:{ left:8, right:78, top:6, bottom:6, containLabel:true },
-    tooltip:{ confine:true, formatter: e => { const r = rows[e.dataIndex]; return `${esc(KMAP[r.k].name)}<br>近 ${n} 天 ${r.c} 篇，之前 ${r.p} 篇`; } },
+    tooltip:{ confine:true, formatter: e => { const r = rows[e.dataIndex]; return `${esc(KMAP[r.k].name)}<br>近 ${n} 天 ${r.c} 篇，${long ? '此前平均每 30 天' : '之前'} ${r.p} 篇`; } },
     xAxis:{ type:'value', show:false }, yAxis:{ type:'category', data:rows.map(r => KMAP[r.k].name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12.5, color:'#16202C', width:150, overflow:'truncate' } },
     series:[{ type:'bar', barWidth:'62%', data:rows.map(r => ({ value:r.c, itemStyle:{ color:TMAP[KMAP[r.k].topic]?.color || '#888', borderRadius:[0,4,4,0] } })),
-      label:{ show:true, position:'right', fontSize:12, color:'#45515E', formatter: e => { const r = rows[e.dataIndex]; return r.p ? `${r.c}  ↑${Math.round((r.c / r.p - 1) * 100)}%` : `${r.c}  新`; } } }]
+      label:{ show:true, position:'right', fontSize:12, color:'#45515E', formatter: e => { const r = rows[e.dataIndex]; return r.p >= 0.5 ? `${r.c}  ${r.c >= r.p ? '↑' : '↓'}${Math.abs(Math.round((r.c / r.p - 1) * 100))}%` : `${r.c}  新`; } } }]
   }, true);
   chart('cRise').off('click'); chart('cRise').on('click', e => addTerm(KMAP[rows[e.dataIndex].k].name));
   return rows;
@@ -278,17 +312,17 @@ function renderSankey(){
   const pool = papers.filter(p => srcOk(p) && inRange(p, n));
   const top = Object.entries(kwCounts(pool)).sort((a, b) => b[1] - a[1]).slice(0, 24).map(x => x[0]);
   const topSet = new Set(top);
-  const srcName = p => p.src === 'arxiv' ? 'arXiv 预印本' : SMAP[p.src]?.top ? '顶刊' : '其他期刊';
+  const srcName = p => SMAP[p.src]?.preprint ? '预印本' : SMAP[p.src]?.top ? '顶刊' : '其他期刊';
   const L = {}; const add = (a, b, w) => { const k = a + '\u0001' + b; L[k] = (L[k] || 0) + w; };
   for (const p of pool) {
     const tps = p.tps.length ? p.tps : [];
     for (const t of tps) add(srcName(p), TMAP[t].name, 1 / tps.length);
-    const ks = (p.kw || []).filter(k => topSet.has(k));
+    const ks = kwOf(p).filter(k => topSet.has(k));
     for (const k of ks) { const t = KMAP[k].topic; const tn = TMAP[t]?.name; if (tn && tps.includes(t)) add(tn, KMAP[k].name, 1); else if (tps.length) add(TMAP[tps[0]].name, KMAP[k].name, 1); }
   }
   const nodes = new Map();
   const nodeOf = (name, color) => { if (!nodes.has(name)) nodes.set(name, { name, itemStyle:{ color } }); };
-  ['arXiv 预印本','顶刊','其他期刊'].forEach((s, i) => nodeOf(s, ['#9B2C2C','#1F3550','#6E8AA8'][i]));
+  ['预印本','顶刊','其他期刊'].forEach((s, i) => nodeOf(s, ['#9B2C2C','#1F3550','#6E8AA8'][i]));
   TOPICS.forEach(t => nodeOf(t.name, t.color));
   top.forEach(k => nodeOf(KMAP[k].name, TMAP[KMAP[k].topic]?.color || '#888'));
   const links = Object.entries(L).filter(([, v]) => v >= 0.5).map(([k, v]) => { const [s, t] = k.split('\u0001'); return { source:s, target:t, value:+v.toFixed(1) }; });
@@ -316,7 +350,7 @@ function renderGraph(){
   const Wg = chart('cGraph').getWidth(); const narrow = Wg < 560;
   const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, narrow ? 28 : 50).map(x => x[0]);
   const set = new Set(top); const E = {};
-  for (const p of pool) { const ks = [...new Set((p.kw || []).filter(k => set.has(k)))].sort(); for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const k = ks[i] + '|' + ks[j]; E[k] = (E[k] || 0) + 1; } }
+  for (const p of pool) { const ks = [...new Set(kwOf(p).filter(k => set.has(k)))].sort(); for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const k = ks[i] + '|' + ks[j]; E[k] = (E[k] || 0) + 1; } }
   const max = Math.max(1, ...top.map(k => cnt[k]));
   const rankOf = Object.fromEntries(top.map((k, i) => [k, i]));
   const cats = TOPICS.map(t => ({ name:t.name, itemStyle:{ color:t.color } }));
@@ -336,30 +370,77 @@ function renderGraph(){
 }
 $('#lgGraph').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; const n = b.dataset.n; hidCats.has(n) ? hidCats.delete(n) : hidCats.add(n); renderGraph(); });
 
-/* ---------- AI keyword cloud ---------- */
-function renderCloud(){
+/* ---------- venue x topic ---------- */
+function renderVenue(){
   const n = rangeDays();
-  const c = {}; const disp = {};
-  for (const p of papers) if (srcOk(p) && inRange(p, n)) for (const k of p.ak || []) { const lo = k.toLowerCase(); c[lo] = (c[lo] || 0) + 1; disp[lo] ||= k; }
-  const rows = Object.entries(c).filter(([, v]) => v >= 2).sort((a, b) => b[1] - a[1]).slice(0, 60);
-  const max = rows.length ? rows[0][1] : 1;
-  $('#cloud').innerHTML = rows.length ? rows.sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => `<button data-add="${esc(disp[k])}" title="${v} 篇" style="font-size:${(12.5 + 12 * Math.sqrt(v / max)).toFixed(1)}px;color:${v >= max * .4 ? '#16202C' : '#45515E'}">${esc(disp[k])}</button>`).join('') : '<span class="lbl">中文要点生成后这里会出现关键词。</span>';
-  const dl = new Set([...KW.map(k => k.name), ...TOPICS.map(t => t.name), ...rows.map(r => disp[r[0]])]);
+  const pool = papers.filter(p => srcOk(p) && inRange(p, n));
+  const bySrc = {}; for (const p of pool) (bySrc[p.src] ||= []).push(p);
+  const srcs = Object.entries(bySrc).sort((a, b) => b[1].length - a[1].length).slice(0, 16).map(x => x[0]).reverse();
+  const tps = TOPICS.filter(t => t.id !== 'ai');
+  const data = [];
+  srcs.forEach((s, y) => { const ps = bySrc[s]; tps.forEach((t, x) => { const c = ps.filter(p => p.tps.includes(t.id)).length; data.push([x, y, +(100 * c / ps.length).toFixed(1), c, ps.length]); }); });
+  const name = s => SMAP[s]?.name || s;
+  const narrow = chart('cVenue').getWidth() < 520;
+  chart('cVenue').setOption({
+    textStyle: baseText,
+    tooltip:{ confine:true, formatter: e => `${esc(name(srcs[e.data[1]]))} · ${esc(tps[e.data[0]].name)}<br>${e.data[3]} / ${e.data[4]} 篇（${e.data[2]}%）` },
+    grid:{ left:6, right:8, top:6, bottom:6, containLabel:true },
+    xAxis:{ type:'category', position:'top', data:tps.map(t => t.name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:11.5, lineHeight:13, color:'#16202C', interval:0, formatter: v => [...v].join('\n') } },
+    yAxis:{ type:'category', data:srcs.map(name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12, color:'#16202C', width: narrow ? 110 : 150, overflow:'truncate',
+      rich:{ top:{ fontWeight:700, color:'#1F3550' } }, formatter: (v, i) => SMAP[srcs[i]]?.top ? `{top|${v}}` : v } },
+    visualMap:{ show:false, dimension:2, min:0, max:60, inRange:{ color:['#F3F6F8', '#9DB6CF', '#1F3550'] } },
+    series:[{ type:'heatmap', data, itemStyle:{ borderColor:'#fff', borderWidth:1.5, borderRadius:2 }, label:{ show:!narrow, fontSize:10, color:'#16202C', formatter: e => e.data[2] >= 8 ? Math.round(e.data[2]) : '' }, emphasis:{ itemStyle:{ borderColor:'#16202C' } } }]
+  }, true);
+  chart('cVenue').off('click'); chart('cVenue').on('click', e => { location.href = './?q=' + encodeURIComponent(tps[e.data[0]].name); });
+}
+
+/* ---------- keyword x month heatmap (full history, from trends.json) ---------- */
+function renderHeat(){
+  const td = TRENDS.days || {};
+  const now0 = new Date(NOW); const cm0 = `${now0.getFullYear()}-${pad(now0.getMonth() + 1)}`;
+  // the current month is shown only once a week of it has passed (otherwise the extrapolation is noise)
+  const months = [...new Set(Object.keys(td).map(d => d.slice(0, 7)))].sort().filter(m => m !== cm0 || now0.getDate() >= 7);
+  const tot = {}, kc = {};
+  for (const [d, e] of Object.entries(td)) { const m = d.slice(0, 7); tot[m] = (tot[m] || 0) + e.n; for (const [k, v] of Object.entries(e.k || {})) { (kc[k] ||= {}); kc[k][m] = (kc[k][m] || 0) + v; } }
+  const now = new Date(NOW); const curM = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+  const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); const scale = m => m === curM ? dim / Math.max(1, now.getDate()) : 1;
+  const sum = k => months.reduce((a, m) => a + (kc[k]?.[m] || 0), 0);
+  const top = Object.keys(kc).filter(k => KMAP[k]).sort((a, b) => sum(b) - sum(a)).slice(0, 30);
+  // order rows by where their peak month is, so emerging topics sit at the bottom
+  // share of the month's papers, so months with more papers overall do not look hotter
+  const val = (k, m) => tot[m] ? (kc[k]?.[m] || 0) / tot[m] : 0;
+  top.sort((a, b) => { const pa = months.reduce((x, m, i) => val(a, m) > val(a, months[x]) ? i : x, 0), pb = months.reduce((x, m, i) => val(b, m) > val(b, months[x]) ? i : x, 0); return pa - pb || sum(b) - sum(a); });
+  const data = [];
+  top.forEach((k, y) => { const vs = months.map(m => val(k, m)); const mx = Math.max(...vs), mn = Math.min(...vs); months.forEach((m, x) => data.push([x, y, mx > mn ? +((vs[x] - mn) / (mx - mn)).toFixed(3) : 0.5, kc[k]?.[m] || 0, +(1000 * vs[x]).toFixed(1)])); });
+  const el = $('#cHeat'); el.style.height = Math.max(420, top.length * 20 + 60) + 'px'; chart('cHeat').resize();
+  chart('cHeat').setOption({
+    textStyle: baseText,
+    tooltip:{ confine:true, formatter: e => `${esc(KMAP[top[e.data[1]]].name)} · ${months[e.data[0]]}<br>${e.data[3]} 篇，占当月相关论文的 ${(e.data[4] / 10).toFixed(1)}%${months[e.data[0]] === curM ? '（本月至今）' : ''}` },
+    grid:{ left:6, right:10, top:8, bottom:6, containLabel:true },
+    xAxis:{ type:'category', position:'top', data:months.map(m => +m.slice(5) + ' 月'), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12, color:'#16202C' } },
+    yAxis:{ type:'category', data:top.map(k => KMAP[k].name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12, width:170, overflow:'truncate',
+      color: (v, i) => TMAP[KMAP[top[i]]?.topic]?.color || '#16202C' } },
+    visualMap:{ show:false, dimension:2, min:0, max:1, inRange:{ color:['#F5F7F9', '#F2C46B', '#C2410C', '#5B1A0B'] } },
+    series:[{ type:'heatmap', data, itemStyle:{ borderColor:'#fff', borderWidth:1.5, borderRadius:2 }, emphasis:{ itemStyle:{ borderColor:'#16202C' } } }]
+  }, true);
+  chart('cHeat').off('click'); chart('cHeat').on('click', e => addTerm(KMAP[top[e.data[1]]].name));
+  const dl = new Set([...KW.map(k => k.name), ...TOPICS.map(t => t.name)]);
   $('#termList').innerHTML = [...dl].map(x => `<option value="${esc(x)}">`).join('');
 }
-$('#cloud').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) addTerm(b.dataset.add); });
 
 /* ---------- controls ---------- */
 function syncSeg(){ for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth']]) for (const b of document.querySelectorAll(id + ' button')) b.setAttribute('aria-pressed', String(String(prefs[key]) === b.dataset.v)); }
 for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth']])
-  $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = b.dataset.v; selDay = null; persist(); renderAll(); });
+  $(id).addEventListener('click', async e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = b.dataset.v; selDay = null; persist(); syncSeg(); await ensureArchive(rangeDays()); renderAll(); });
 function renderAll(){
-  syncSeg();
+  syncSeg(); setSub();
+  $('#segSmooth').style.display = $('#lblSmooth').style.display = weekly() ? 'none' : '';
   renderTopics();
   const rise = renderRise();
   if (!terms) terms = rise.slice(-3).reverse().map(r => KMAP[r.k].name);
-  renderExplore(); renderSankey(); renderGraph(); renderCloud();
+  renderExplore(); renderSankey(); renderGraph(); renderVenue(); renderHeat();
 }
+await ensureArchive(rangeDays());
 renderAll();
 })();
 </script>
