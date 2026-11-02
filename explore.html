@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>趋势与探索 | 微纳光学新文献</title>
+<meta name="description" content="微纳光学各方向的论文数量趋势、上升最快的关键词、主题与关键词流向和共现网络，并可自由输入关键词探索。每天更新。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316202C'/%3E%3Crect x='7' y='9' width='3' height='15' fill='%236B3FD4'/%3E%3Crect x='12.5' y='6' width='3' height='18' fill='%2313926A'/%3E%3Crect x='18' y='11' width='3' height='13' fill='%23C08A00'/%3E%3Crect x='23.5' y='8' width='3' height='16' fill='%23D0402F'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F2F5F6; --paper:#FFFFFF; --ink:#16202C; --ink2:#45515E; --ink3:#7A8794; --rule:#D9E0E4; --focus:#2F6BD8; --navy:#1F3550;
+  --serif:"Iowan Old Style","Charter","Source Han Serif SC","Songti SC","Noto Serif CJK SC",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 22px 80px}
+.back{font-size:14px;color:var(--ink2);text-decoration:none}
+.back:hover{color:var(--ink)}
+h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;margin:8px 0 0}
+.sub{margin:6px 0 0;color:var(--ink2);font-size:14px}
+.controls{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:16px -22px 0;padding:10px 22px;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid transparent}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;background:none;padding:5px 11px;cursor:pointer;font-size:13.5px;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.lbl{font-size:13px;color:var(--ink3)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:14px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 18px 12px;min-width:0}
+.card h2{font-family:var(--serif);font-weight:600;font-size:18px;margin:0}
+.card .desc{margin:3px 0 8px;color:var(--ink3);font-size:13px}
+.card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.c12{grid-column:span 12}.c7{grid-column:span 7}.c5{grid-column:span 5}.c6{grid-column:span 6}
+.chart{width:100%;height:340px}
+.chart.tall{height:520px}
+.explore{border:2px solid var(--navy)}
+.terms{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px}
+.term{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 6px 3px 11px;font-size:13.5px;color:#fff;background:var(--c)}
+.term button{border:0;background:rgba(255,255,255,.25);color:#fff;border-radius:999px;width:20px;height:20px;line-height:18px;padding:0;cursor:pointer}
+.adder{display:flex;gap:8px;flex:1 1 320px}
+.adder input{flex:1;border:1px solid var(--rule);border-radius:8px;padding:6px 11px;background:#fff;font-size:14px}
+.btn{border:1px solid var(--rule);background:var(--paper);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:13.5px;color:var(--ink2)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.cloud{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;line-height:1.35}
+.cloud button{border:0;background:none;padding:0;cursor:pointer;color:var(--ink2)}
+.cloud button:hover{color:var(--focus);text-decoration:underline}
+.plist{margin-top:8px;border-top:1px solid var(--rule)}
+.plist .it{padding:10px 0;border-bottom:1px solid #E6EBEE}
+.plist .it .tt{font-family:var(--serif);font-weight:600;font-size:15.5px;line-height:1.35;color:var(--ink);text-decoration:none}
+.plist .it .tt:hover{text-decoration:underline}
+.plist .it .m{font-size:12.5px;color:var(--ink3);margin-top:2px}
+.plist .it .m b{font-family:var(--serif);font-style:italic;color:var(--navy)}
+.plist .it .z{font-size:13.5px;color:var(--ink2);margin-top:2px}
+.plhead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--ink3)}
+.plhead a{color:var(--focus)}
+.note{color:var(--ink3);font-size:13px;margin-top:28px;max-width:80ch}
+.err{color:#B3261E}
+@media (max-width:900px){.c7,.c5,.c6{grid-column:span 12}.chart.tall{height:420px}}
+@media (max-width:620px){.wrap{padding:18px 14px 60px}.controls{margin:14px -14px 0;padding:10px 14px}h1{font-size:25px}.chart{height:300px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./">← 返回文献列表</a>
+  <h1>趋势与探索</h1>
+  <p class="sub" id="sub">正在读取数据…</p>
+
+  <div class="controls">
+    <span class="lbl">时间</span>
+    <div class="seg" id="segRange"><button data-v="7">7 天</button><button data-v="14">14 天</button><button data-v="30">30 天</button><button data-v="all">全部历史</button></div>
+    <span class="lbl">来源</span>
+    <div class="seg" id="segSrc"><button data-v="all">全部</button><button data-v="arxiv">arXiv</button><button data-v="journal">期刊</button><button data-v="top">顶刊</button></div>
+    <span class="lbl">曲线</span>
+    <div class="seg" id="segSmooth"><button data-v="1">按天</button><button data-v="7">7 日平均</button></div>
+  </div>
+
+  <div class="grid">
+    <section class="card c12 explore" id="exploreCard">
+      <div class="head">
+        <div><h2>自由探索</h2><p class="desc">输入任意关键词（英文或中文，空格表示同时包含），比较它们每天出现的论文数；点曲线上的某一天，下面列出那天的论文。</p></div>
+        <form class="adder" id="adder" autocomplete="off"><input id="termIn" list="termList" placeholder="例如 quasi-BIC、thin-film lithium niobate、超构透镜"><datalist id="termList"></datalist><button class="btn primary" type="submit">添加</button></form>
+      </div>
+      <div class="terms" id="terms"></div>
+      <div class="chart" id="cExplore"></div>
+      <div class="plhead"><span id="plTitle"></span><a id="plOpen" href="./">在文献列表中打开</a></div>
+      <div class="plist" id="plist"></div>
+    </section>
+
+    <section class="card c7">
+      <h2>各方向论文数</h2><p class="desc">每天新出现的相关论文，按主题堆叠。一篇论文可以属于多个主题。点图例可以隐藏某个主题。</p>
+      <div class="chart" id="cTopics"></div>
+    </section>
+    <section class="card c5">
+      <h2>升温最快的关键词</h2><p class="desc" id="riseDesc">与上一个同样长的时间段相比。点一下加入自由探索。</p>
+      <div class="chart" id="cRise"></div>
+    </section>
+
+    <section class="card c12">
+      <h2>来源、主题与关键词的流向</h2><p class="desc">左边是论文来源，中间是主题，右边是出现最多的 24 个具体关键词；带子越宽论文越多。点右侧关键词可以加入自由探索。</p>
+      <div class="chart tall" id="cSankey"></div>
+    </section>
+
+    <section class="card c7">
+      <h2>关键词共现网络</h2><p class="desc">经常出现在同一篇论文里的关键词连在一起，圆越大论文越多，颜色表示所属方向。可以拖动、缩放，点圆加入自由探索。</p>
+      <div class="chart tall" id="cGraph"></div>
+    </section>
+    <section class="card c5">
+      <h2>Claude 提取的具体关键词</h2><p class="desc">每篇论文由 Claude 标注 2–4 个具体关键词，字越大出现越多。点一下加入自由探索。</p>
+      <div class="cloud" id="cloud"></div>
+    </section>
+  </div>
+  <p class="note">数据每天自动更新；趋势历史从 2026 年 11 月开始逐日积累，30 天以内的图表直接由当前论文计算。关键词由规则词表和 Claude 标注共同得到，计数是包含该关键词的论文篇数。图表使用开源库 Apache ECharts。</p>
+</div>
+
+<script>
+function loadScript(urls){ return new Promise((res, rej) => { const tryOne = i => { if (i >= urls.length) return rej(new Error('ECharts 加载失败')); const s = document.createElement('script'); s.src = urls[i]; s.onload = res; s.onerror = () => tryOne(i + 1); document.head.appendChild(s); }; tryOne(0); }); }
+(async () => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAY = 864e5, NOW = Date.now();
+let CONFIG, DATA, TRENDS;
+try {
+  const get = u => fetch(u, { cache:'no-cache' }).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); });
+  [CONFIG, DATA, TRENDS] = await Promise.all([get('config.json'), get('data.json'), get('trends.json').catch(() => ({ days:{} }))]);
+  await loadScript(['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js', 'https://unpkg.com/echarts@5.5.1/dist/echarts.min.js', 'https://fastly.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js']);
+} catch (e) { $('#sub').innerHTML = `<span class="err">${esc(e.message)}，请刷新重试。</span>`; return; }
+
+const TOPICS = CONFIG.topics; const TMAP = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+const KW = CONFIG.keywords || []; const KMAP = Object.fromEntries(KW.map(k => [k.id, k]));
+const SMAP = Object.fromEntries(CONFIG.sources.map(s => [s.id, s]));
+const TERM_COLORS = ['#1F3550','#D0402F','#13926A','#C08A00','#6B3FD4','#0E8FA3','#C2489A','#DB6A1A'];
+const pad = n => String(n).padStart(2, '0');
+const dstr = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const short = s => s.slice(5).replace('-', '/');
+
+const papers = (DATA.papers || []).filter(p => (p.rel === undefined ? p.rt && p.rt.length : p.rel > 0) && p.rt && p.rt.length).map(p => {
+  p.tps = (p.tp && p.tp.length ? p.tp : p.rt).filter(t => TMAP[t]);
+  p.day = dstr(p.ts);
+  p.kn = (p.kw || []).map(k => KMAP[k]?.name).filter(Boolean);
+  p._s = (p.title + ' ' + (p.abs || '') + ' ' + (p.zh || '') + ' ' + (p.ak || []).join(' ') + ' ' + p.kn.join(' ')).toLowerCase();
+  return p;
+});
+const prefs = Object.assign({ range:'14', src:'all', smooth:'7' }, JSON.parse(localStorage.getItem('nanoradar.explore') || '{}'));
+let terms = JSON.parse(localStorage.getItem('nanoradar.terms') || 'null');
+const persist = () => { try { localStorage.setItem('nanoradar.explore', JSON.stringify(prefs)); localStorage.setItem('nanoradar.terms', JSON.stringify(terms)); } catch {} };
+
+$('#sub').textContent = `基于近 31 天 ${papers.length} 篇相关论文（arXiv 与 ${CONFIG.sources.length - 1} 种期刊），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}。`;
+
+const charts = {};
+const chart = id => (charts[id] ||= echarts.init(document.getElementById(id), null, { renderer:'canvas' }));
+window.addEventListener('resize', () => Object.values(charts).forEach(c => c.resize()));
+const baseText = { fontFamily: getComputedStyle(document.body).fontFamily, color:'#45515E' };
+
+function srcOk(p){ if (prefs.src === 'all') return true; if (prefs.src === 'arxiv') return p.src === 'arxiv'; if (prefs.src === 'top') return !!SMAP[p.src]?.top; return p.src !== 'arxiv'; }
+function rangeDays(){ return prefs.range === 'all' ? 30 : +prefs.range; }
+function daysList(n, endTs = NOW){ const out = []; for (let i = n - 1; i >= 0; i--) out.push(dstr(endTs - i * DAY)); return out; }
+function smooth(arr){ const w = +prefs.smooth; if (w <= 1) return arr; return arr.map((_, i) => { const s = arr.slice(Math.max(0, i - w + 1), i + 1); return +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(2); }); }
+function inRange(p, n){ return NOW - p.ts < n * DAY; }
+
+/* ---------- term matching ---------- */
+const kwByName = Object.fromEntries(KW.map(k => [k.name.toLowerCase(), k.id]));
+const topicByName = Object.fromEntries(TOPICS.map(t => [t.name, t.id]));
+function matcher(term){
+  const t = term.trim(); const lo = t.toLowerCase();
+  if (topicByName[t]) { const id = topicByName[t]; return p => p.tps.includes(id); }
+  if (kwByName[lo]) { const id = kwByName[lo]; const words = lo.split(/\s*\/\s*/); return p => (p.kw || []).includes(id) || words.some(w => p._s.includes(w)); }
+  const parts = lo.split(/\s+/).filter(Boolean);
+  return p => parts.every(w => p._s.includes(w));
+}
+
+/* ---------- explore ---------- */
+let selDay = null, selTerm = null;
+function renderTerms(){
+  $('#terms').innerHTML = terms.map((t, i) => `<span class="term" style="--c:${TERM_COLORS[i % TERM_COLORS.length]}">${esc(t)}<button data-rm="${i}" aria-label="移除 ${esc(t)}">×</button></span>`).join('') || '<span class="lbl">还没有关键词，在右上方输入或点下面图表里的关键词。</span>';
+}
+function renderExplore(){
+  renderTerms();
+  const n = rangeDays(); const days = daysList(n);
+  const pool = papers.filter(p => srcOk(p) && inRange(p, n));
+  const series = terms.map((t, i) => {
+    const m = matcher(t); const cnt = Object.fromEntries(days.map(d => [d, 0]));
+    for (const p of pool) if (m(p) && cnt[p.day] !== undefined) cnt[p.day]++;
+    const total = Object.values(cnt).reduce((a, b) => a + b, 0);
+    return { name:`${t}（${total}）`, term:t, type:'line', smooth:true, symbolSize:6, showSymbol:true, data:smooth(days.map(d => cnt[d])), lineStyle:{ width:2.4 }, itemStyle:{ color:TERM_COLORS[i % TERM_COLORS.length] } };
+  });
+  chart('cExplore').setOption({
+    textStyle: baseText, grid:{ left:40, right:20, top:36, bottom:30 }, tooltip:{ trigger:'axis' },
+    legend:{ top:0, left:0, textStyle:{ fontSize:12.5 } },
+    xAxis:{ type:'category', data:days.map(short), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
+    yAxis:{ type:'value', minInterval:1, splitLine:{ lineStyle:{ color:'#EEF2F4' } }, name: prefs.smooth === '7' ? '篇/天（7 日平均）' : '篇/天', nameTextStyle:{ align:'left' } },
+    series
+  }, true);
+  // list
+  const ms = (selTerm ? [selTerm] : terms).map(matcher);
+  let list = pool.filter(p => ms.some(m => m(p)));
+  if (selDay) list = list.filter(p => p.day === selDay);
+  list.sort((a, b) => b.ts - a.ts);
+  $('#plTitle').textContent = terms.length ? `${selTerm ? '“' + selTerm + '”' : '全部关键词'}${selDay ? '，' + selDay.slice(5) : `，近 ${n} 天`}：${list.length} 篇${list.length > 40 ? '，显示最新 40 篇' : ''}${selDay || selTerm ? '（点空白处取消筛选）' : ''}` : '';
+  $('#plOpen').href = './?q=' + encodeURIComponent(selTerm || terms[0] || '');
+  $('#plOpen').style.display = terms.length ? '' : 'none';
+  $('#plist').innerHTML = list.slice(0, 40).map(p => `<div class="it"><a class="tt" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>
+    <div class="m"><b>${esc(p.src === 'arxiv' ? 'arXiv' : SMAP[p.src]?.name || p.src)}</b>　${p.day.slice(5)}　${p.tps.map(t => TMAP[t].name).join('、')}</div>${p.zh ? `<div class="z">${esc(p.zh)}</div>` : ''}</div>`).join('');
+}
+chart('cExplore').on('click', e => { selDay = daysList(rangeDays())[e.dataIndex]; selTerm = terms[e.seriesIndex]; renderExplore(); });
+chart('cExplore').getZr().on('click', e => { if (!e.target) { selDay = null; selTerm = null; renderExplore(); } });
+function addTerm(t){ t = String(t || '').trim(); if (!t) return; if (!terms.includes(t)) { terms.push(t); if (terms.length > 8) terms.shift(); } selDay = null; selTerm = null; persist(); renderExplore(); $('#exploreCard').scrollIntoView({ behavior:'smooth', block:'start' }); }
+$('#adder').addEventListener('submit', e => { e.preventDefault(); addTerm($('#termIn').value); $('#termIn').value = ''; });
+$('#terms').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; terms.splice(+b.dataset.rm, 1); selTerm = null; persist(); renderExplore(); });
+
+/* ---------- topics over time ---------- */
+function renderTopics(){
+  let days, rows;
+  if (prefs.range === 'all') {
+    const td = TRENDS.days || {};
+    days = Object.keys(td).sort();
+    rows = TOPICS.map(t => days.map(d => (td[d]?.t || {})[t.id] || 0));
+  } else {
+    const n = rangeDays(); days = daysList(n);
+    const idx = Object.fromEntries(days.map((d, i) => [d, i]));
+    rows = TOPICS.map(() => days.map(() => 0));
+    const ti = Object.fromEntries(TOPICS.map((t, i) => [t.id, i]));
+    for (const p of papers) if (srcOk(p) && idx[p.day] !== undefined) for (const t of p.tps) rows[ti[t]][idx[p.day]]++;
+  }
+  chart('cTopics').setOption({
+    textStyle: baseText, color: TOPICS.map(t => t.color), tooltip:{ trigger:'axis', order:'valueDesc' },
+    legend:{ type:'scroll', bottom:0, textStyle:{ fontSize:12 } }, grid:{ left:40, right:16, top:16, bottom:58 },
+    xAxis:{ type:'category', boundaryGap:false, data:days.map(short), axisLine:{ lineStyle:{ color:'#C9D2D8' } } },
+    yAxis:{ type:'value', splitLine:{ lineStyle:{ color:'#EEF2F4' } } },
+    series: TOPICS.map((t, i) => ({ name:t.name, type:'line', stack:'all', smooth:true, symbol:'none', areaStyle:{ opacity:.82 }, lineStyle:{ width:0 }, emphasis:{ focus:'series' }, data:smooth(rows[i]) }))
+  }, true);
+}
+
+/* ---------- rising keywords ---------- */
+function kwCounts(pool){ const c = {}; for (const p of pool) for (const k of p.kw || []) c[k] = (c[k] || 0) + 1; return c; }
+function renderRise(){
+  const n = Math.min(rangeDays(), 15);
+  const cur = kwCounts(papers.filter(p => srcOk(p) && NOW - p.ts < n * DAY));
+  const prev = kwCounts(papers.filter(p => srcOk(p) && NOW - p.ts >= n * DAY && NOW - p.ts < 2 * n * DAY));
+  $('#riseDesc').textContent = `近 ${n} 天与之前 ${n} 天相比，按增长排序（至少 3 篇）。点一下加入自由探索。`;
+  const rows = Object.keys(cur).filter(k => cur[k] >= 3).map(k => ({ k, c:cur[k], p:prev[k] || 0, g:(cur[k] + 1) / ((prev[k] || 0) + 1) }))
+    .sort((a, b) => b.g - a.g || b.c - a.c).slice(0, 15).reverse();
+  chart('cRise').setOption({
+    textStyle: baseText, grid:{ left:8, right:64, top:6, bottom:6, containLabel:true },
+    tooltip:{ formatter: e => { const r = rows[e.dataIndex]; return `${esc(KMAP[r.k].name)}<br>近 ${n} 天 ${r.c} 篇，之前 ${r.p} 篇`; } },
+    xAxis:{ type:'value', show:false }, yAxis:{ type:'category', data:rows.map(r => KMAP[r.k].name), axisTick:{ show:false }, axisLine:{ show:false }, axisLabel:{ fontSize:12.5, color:'#16202C' } },
+    series:[{ type:'bar', barWidth:'62%', data:rows.map(r => ({ value:r.c, itemStyle:{ color:TMAP[KMAP[r.k].topic]?.color || '#888', borderRadius:[0,4,4,0] } })),
+      label:{ show:true, position:'right', fontSize:12, color:'#45515E', formatter: e => { const r = rows[e.dataIndex]; return r.p ? `${r.c}  ↑${Math.round((r.c / r.p - 1) * 100)}%` : `${r.c}  新`; } } }]
+  }, true);
+  chart('cRise').off('click'); chart('cRise').on('click', e => addTerm(KMAP[rows[e.dataIndex].k].name));
+  return rows;
+}
+
+/* ---------- sankey ---------- */
+function renderSankey(){
+  const n = rangeDays();
+  const pool = papers.filter(p => srcOk(p) && inRange(p, n));
+  const top = Object.entries(kwCounts(pool)).sort((a, b) => b[1] - a[1]).slice(0, 24).map(x => x[0]);
+  const topSet = new Set(top);
+  const srcName = p => p.src === 'arxiv' ? 'arXiv 预印本' : SMAP[p.src]?.top ? '顶刊' : '其他期刊';
+  const L = {}; const add = (a, b, w) => { const k = a + '\u0001' + b; L[k] = (L[k] || 0) + w; };
+  for (const p of pool) {
+    const tps = p.tps.length ? p.tps : [];
+    for (const t of tps) add(srcName(p), TMAP[t].name, 1 / tps.length);
+    const ks = (p.kw || []).filter(k => topSet.has(k));
+    for (const k of ks) { const t = KMAP[k].topic; const tn = TMAP[t]?.name; if (tn && tps.includes(t)) add(tn, KMAP[k].name, 1); else if (tps.length) add(TMAP[tps[0]].name, KMAP[k].name, 1); }
+  }
+  const nodes = new Map();
+  const nodeOf = (name, color) => { if (!nodes.has(name)) nodes.set(name, { name, itemStyle:{ color } }); };
+  ['arXiv 预印本','顶刊','其他期刊'].forEach((s, i) => nodeOf(s, ['#9B2C2C','#1F3550','#6E8AA8'][i]));
+  TOPICS.forEach(t => nodeOf(t.name, t.color));
+  top.forEach(k => nodeOf(KMAP[k].name, TMAP[KMAP[k].topic]?.color || '#888'));
+  const links = Object.entries(L).filter(([, v]) => v >= 0.5).map(([k, v]) => { const [s, t] = k.split('\u0001'); return { source:s, target:t, value:+v.toFixed(1) }; });
+  const used = new Set(links.flatMap(l => [l.source, l.target]));
+  chart('cSankey').setOption({
+    textStyle: baseText, tooltip:{ trigger:'item', formatter: e => e.dataType === 'edge' ? `${esc(e.data.source)} → ${esc(e.data.target)}：${Math.round(e.data.value)} 篇` : esc(e.name) },
+    series:[{ type:'sankey', left:8, right:150, top:8, bottom:8, nodeGap:7, nodeWidth:12, draggable:true, layoutIterations:64,
+      data:[...nodes.values()].filter(n => used.has(n.name)), links,
+      lineStyle:{ color:'gradient', opacity:.32, curveness:.5 }, emphasis:{ focus:'adjacency' }, label:{ fontSize:12.5, color:'#16202C' } }]
+  }, true);
+  chart('cSankey').off('click'); chart('cSankey').on('click', e => { if (e.dataType === 'node' && kwByName[e.name.toLowerCase()]) addTerm(e.name); else if (e.dataType === 'node' && topicByName[e.name]) addTerm(e.name); });
+}
+
+/* ---------- co-occurrence graph ---------- */
+function renderGraph(){
+  const n = rangeDays();
+  const pool = papers.filter(p => srcOk(p) && inRange(p, n));
+  const cnt = kwCounts(pool);
+  const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 50).map(x => x[0]);
+  const set = new Set(top); const E = {};
+  for (const p of pool) { const ks = [...new Set((p.kw || []).filter(k => set.has(k)))].sort(); for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const k = ks[i] + '|' + ks[j]; E[k] = (E[k] || 0) + 1; } }
+  const max = Math.max(1, ...top.map(k => cnt[k]));
+  const cats = TOPICS.map(t => ({ name:t.name, itemStyle:{ color:t.color } }));
+  const ci = Object.fromEntries(TOPICS.map((t, i) => [t.id, i]));
+  chart('cGraph').setOption({
+    textStyle: baseText, tooltip:{ formatter: e => e.dataType === 'edge' ? `${esc(KMAP[e.data.source].name)} + ${esc(KMAP[e.data.target].name)}：${e.data.value} 篇` : `${esc(e.data.name)}：${e.data.value} 篇` },
+    legend:{ type:'scroll', bottom:0, data:cats.map(c => c.name), textStyle:{ fontSize:12 } },
+    series:[{ type:'graph', layout:'force', roam:true, draggable:true, top:10, bottom:40, categories:cats,
+      force:{ repulsion:160, edgeLength:[40, 140], gravity:.12 },
+      data: top.map(k => ({ id:k, name:KMAP[k].name, value:cnt[k], category:ci[KMAP[k].topic] ?? 0, symbolSize: 10 + 34 * Math.sqrt(cnt[k] / max), label:{ show: cnt[k] >= max * 0.12, fontSize:12 } })),
+      links: Object.entries(E).filter(([, v]) => v >= 2).map(([k, v]) => { const [a, b] = k.split('|'); return { source:a, target:b, value:v, lineStyle:{ width: Math.min(6, 0.6 + v / 3), opacity:.35 } }; }),
+      emphasis:{ focus:'adjacency', label:{ show:true } }, lineStyle:{ color:'source', curveness:.12 } }]
+  }, true);
+  chart('cGraph').off('click'); chart('cGraph').on('click', e => { if (e.dataType === 'node') addTerm(e.data.name); });
+}
+
+/* ---------- AI keyword cloud ---------- */
+function renderCloud(){
+  const n = rangeDays();
+  const c = {}; const disp = {};
+  for (const p of papers) if (srcOk(p) && inRange(p, n)) for (const k of p.ak || []) { const lo = k.toLowerCase(); c[lo] = (c[lo] || 0) + 1; disp[lo] ||= k; }
+  const rows = Object.entries(c).filter(([, v]) => v >= 2).sort((a, b) => b[1] - a[1]).slice(0, 60);
+  const max = rows.length ? rows[0][1] : 1;
+  $('#cloud').innerHTML = rows.length ? rows.sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => `<button data-add="${esc(disp[k])}" title="${v} 篇" style="font-size:${(12.5 + 12 * Math.sqrt(v / max)).toFixed(1)}px;color:${v >= max * .4 ? '#16202C' : '#45515E'}">${esc(disp[k])}</button>`).join('') : '<span class="lbl">中文要点生成后这里会出现关键词。</span>';
+  const dl = new Set([...KW.map(k => k.name), ...TOPICS.map(t => t.name), ...rows.map(r => disp[r[0]])]);
+  $('#termList').innerHTML = [...dl].map(x => `<option value="${esc(x)}">`).join('');
+}
+$('#cloud').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) addTerm(b.dataset.add); });
+
+/* ---------- controls ---------- */
+function syncSeg(){ for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth']]) for (const b of document.querySelectorAll(id + ' button')) b.setAttribute('aria-pressed', String(String(prefs[key]) === b.dataset.v)); }
+for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth']])
+  $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = b.dataset.v; selDay = null; persist(); renderAll(); });
+function renderAll(){
+  syncSeg();
+  renderTopics();
+  const rise = renderRise();
+  if (!terms) terms = rise.slice(-3).reverse().map(r => KMAP[r.k].name);
+  renderExplore(); renderSankey(); renderGraph(); renderCloud();
+}
+renderAll();
+})();
+</script>
+</body>
+</html>

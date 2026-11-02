@@ -1,6 +1,6 @@
 {
  "window_days": 31,
- "context": "photon|optic|light|laser|electromagnetic|terahertz|\\bthz\\b|microwave|polariton|plasmon|metasurface|metamaterial|acoustic|elastic wave|beam|infrared|visible|nanophotonic|waveguide|resonator|lens",
+ "context": "photon|optic|light|laser|electromagnetic|terahertz|\\bthz\\b|microwave|polariton|plasmon|metasurface|metamaterial|acoustic|elastic wave|beam|infrared|visible|nanophotonic|waveguide|resonator|lens|imaging|microscop|spectro|detector|photodetect|modulator|raman|chip|camera|holograph|interferomet|emitter|fluoresc",
  "topics": [
   {
    "id": "meta",
@@ -36,15 +36,64 @@
    "ctx": true
   },
   {
+   "id": "sens",
+   "re": "\\bsens(or|ors|ing)\\b|biosens|refractive[- ]index sens|limit of detection|detection limit|gas sens|photodetect|\\bSERS\\b|surface-enhanced raman|label-free|optical detection",
+   "ctx": true,
+   "name": "传感",
+   "color": "#0E8FA3"
+  },
+  {
+   "id": "comp",
+   "re": "optical comput|photonic comput|optical neural|diffractive (deep )?(neural|network|processor)|photonic (neural|tensor|accelerat|processor|matrix|reservoir)|optical (matrix|analog|logic|reservoir|convolution|differentiat)|neuromorphic photon|all-optical (comput|logic)|analog (optical )?comput|optical edge detection|in-memory photon|photonic integrated circuit for (ai|machine)",
+   "ctx": true,
+   "name": "光计算",
+   "color": "#C2489A"
+  },
+  {
+   "id": "twod",
+   "re": "\\b2D (material|semiconductor|crystal|heterostructure)|two-dimensional (material|semiconductor|crystal|heterostructure)|van der waals|\\bvdW\\b|graphene|\\bhBN\\b|hexagonal boron nitride|dichalcogenide|\\bTMDs?\\b|MoS2|WS2|WSe2|MoSe2|MoTe2|black phosphorus|MXene|monolayer|few-layer|moir[eé] (superlattice|exciton|lattice)",
+   "ctx": true,
+   "name": "二维材料",
+   "color": "#5E8A1E"
+  },
+  {
+   "id": "chip",
+   "re": "on-chip|silicon photonic|integrated photonic|photonic integrated|\\bPICs?\\b|lithium niobate|\\bTFLN\\b|\\bLNOI\\b|silicon nitride|\\bSiN\\b|microring|micro-ring|ring resonator|microresonator|microcomb|kerr comb|photonic chip|heterogeneous integration|electro-optic modulator|waveguide",
+   "ctx": true,
+   "name": "片上光学",
+   "color": "#DB6A1A"
+  },
+  {
+   "id": "img",
+   "re": "computational (imaging|spectrometer|spectroscopy|microscopy|optics|camera)|lensless|ptychograph|single-pixel|ghost imaging|holographic (imaging|microscopy)|phase retrieval|light-field (camera|imaging)|compressive (imaging|sensing|spectr)|snapshot (spectral|hyperspectral|imaging)|hyperspectral imag|depth (imaging|sensing|estimation)|super-resolution (imaging|microscopy)|end-to-end (optical )?design|imaging through scattering|polarimetric imag|metalens (imaging|camera)|reconstruct(ion|ed) (image|imaging)",
+   "ctx": true,
+   "name": "计算成像",
+   "color": "#4F6B8F"
+  },
+  {
+   "id": "nl",
+   "re": "nonlinear (optic|photonic|metasurface|response|frequency|plasmon)|second[- ]harmonic|third[- ]harmonic|high[- ]harmonic|\\bSHG\\b|\\bTHG\\b|\\bHHG\\b|four-wave mixing|parametric (down|amplif|oscillat|process)|frequency (conversion|mixing|doubling)|kerr (nonlinear|effect)|optical bistab|soliton",
+   "ctx": true,
+   "name": "非线性光学",
+   "color": "#9A4B2A"
+  },
+  {
+   "id": "quant",
+   "re": "quantum (emitter|light|photonic|optic|dot|state of light|entangle|metasurface|source|imaging|sensing|key distribution|communication)|single[- ]photon|entangled photon|photon pair|squeez|cavity QED|\\bQKD\\b|spontaneous parametric down",
+   "ctx": true,
+   "name": "量子光子学",
+   "color": "#3F3F9E"
+  },
+  {
    "id": "ai",
    "name": "智能设计",
-   "color": "#8A3B6A",
+   "color": "#7B2D5B",
    "re": "inverse[- ]design|deep learning|neural network|machine learning|topology optimi|large language model|\\bLLMs?\\b|agentic|\\bAI\\b|differentiable|autonomous|generative model|diffusion model",
    "secondary": true
   }
  ],
- "prefilter": "metasurf|metalens|meta-?optic|metagrating|meta-?atom|metamaterial|topolog|non-hermitian|exceptional point|plasmon|nanophoton|nano-?optic|nano-?antenna|vortex|vortic|angular momentum|structured (light|beam|wave|field)|bound states? in the continuum|\\bq?-?bics?\\b|photonic crystal|polariton|\\bmie\\b|hyperbolic|skyrmion|meron|hologra|wavefront|chiral|subwavelength|near-field|inverse[- ]design|polariz|epsilon-near-zero|cloak|time-varying|spatiotemporal|beam (shaping|steering)|nanocavit|nano-?resonator|anapole|nanolaser|flat optic",
- "arxiv_query": "(cat:physics.optics OR cat:physics.app-ph OR cat:cond-mat.mes-hall) AND (abs:metasurface OR abs:metasurfaces OR abs:metalens OR abs:metamaterial OR abs:metamaterials OR abs:topological OR abs:plasmonic OR abs:plasmon OR abs:nanophotonic OR abs:vortex OR abs:\"orbital angular momentum\" OR abs:\"structured light\" OR abs:\"bound states in the continuum\" OR abs:\"photonic crystal\" OR abs:\"non-Hermitian\" OR abs:skyrmion OR abs:polariton OR abs:Mie OR abs:nanoantenna OR abs:hyperbolic)",
+ "prefilter": "metasurf|metalens|meta-?optic|metagrating|meta-?atom|metamaterial|topolog|non-hermitian|exceptional point|plasmon|nanophoton|nano-?optic|nano-?antenna|vortex|vortic|angular momentum|structured (light|beam|wave|field)|bound states? in the continuum|\\bq?-?bics?\\b|photonic crystal|polariton|\\bmie\\b|hyperbolic|skyrmion|meron|hologra|wavefront|chiral|subwavelength|near-field|inverse[- ]design|polariz|epsilon-near-zero|cloak|time-varying|spatiotemporal|beam (shaping|steering)|nanocavit|nano-?resonator|anapole|nanolaser|flat optic|\\bsens(or|ors|ing)\\b|biosens|photodetect|optical (comput|neural|logic|matrix|signal|communicat|fiber|switch)|photonic (comput|neural|tensor|accelerat|processor|integrat|chip|circuit)|diffractive|neuromorphic|graphene|van der waals|\\bvdw\\b|two-dimensional|\\b2d (material|semiconductor|crystal)|\\bhbn\\b|dichalcogenide|\\btmds?\\b|mos2|ws2|wse2|mose2|monolayer|on-chip|silicon photonic|integrated photonic|lithium niobate|\\btfln\\b|silicon nitride|microring|ring resonator|microresonator|microcomb|waveguide|modulator|computational imaging|lensless|ptychograph|single-pixel|ghost imaging|phase retrieval|hyperspectral|spectrometer|super-resolution|microscop|imaging|nonlinear optic|harmonic generation|four-wave mixing|parametric|frequency (conversion|comb)|quantum (emitter|light|photonic|optic|dot)|single[- ]photon|entangled photon|photon pair|squeez|laser|lasing|optical",
+ "arxiv_query": "cat:physics.optics OR ((cat:physics.app-ph OR cat:cond-mat.mes-hall OR cat:cond-mat.mtrl-sci OR cat:quant-ph OR cat:eess.IV OR cat:cs.ET OR cat:physics.class-ph) AND (abs:metasurface OR abs:metasurfaces OR abs:metalens OR abs:metamaterial OR abs:metamaterials OR abs:photonic OR abs:photonics OR abs:plasmonic OR abs:plasmon OR abs:nanophotonic OR abs:polariton OR abs:polaritons OR abs:\"optical vortex\" OR abs:\"orbital angular momentum\" OR abs:\"structured light\" OR abs:\"bound states in the continuum\" OR abs:\"non-Hermitian\" OR abs:\"optical computing\" OR abs:\"optical neural network\" OR abs:\"diffractive\" OR abs:\"computational imaging\" OR abs:lensless OR abs:\"single-pixel\" OR abs:ptychography OR abs:\"silicon photonics\" OR abs:\"lithium niobate\" OR abs:microresonator OR abs:microcomb OR abs:waveguide OR abs:\"on-chip\" OR abs:\"optical sensing\" OR abs:biosensor OR abs:photodetector OR abs:\"van der Waals\" OR abs:\"optical skyrmion\"))",
  "sources": [
   {
    "id": "arxiv",
@@ -54,146 +103,956 @@
   {
    "id": "nature",
    "name": "Nature",
-   "group": "Nature 系列",
-   "issn": "0028-0836"
-  },
-  {
-   "id": "nphoton",
-   "name": "Nature Photonics",
-   "group": "Nature 系列",
-   "issn": "1749-4885"
-  },
-  {
-   "id": "nnano",
-   "name": "Nature Nanotechnology",
-   "group": "Nature 系列",
-   "issn": "1748-3387"
-  },
-  {
-   "id": "nphys",
-   "name": "Nature Physics",
-   "group": "Nature 系列",
-   "issn": "1745-2473"
-  },
-  {
-   "id": "nmat",
-   "name": "Nature Materials",
-   "group": "Nature 系列",
-   "issn": "1476-1122"
-  },
-  {
-   "id": "ncomms",
-   "name": "Nature Communications",
-   "group": "Nature 系列",
-   "issn": "2041-1723"
-  },
-  {
-   "id": "lsa",
-   "name": "Light: Science & Applications",
-   "group": "Nature 系列",
-   "issn": "2047-7538"
-  },
-  {
-   "id": "elight",
-   "name": "eLight",
-   "group": "Nature 系列",
-   "issn": "2662-8643"
+   "group": "综合",
+   "issn": "0028-0836",
+   "top": true
   },
   {
    "id": "science",
    "name": "Science",
-   "group": "Science 系列",
-   "issn": "0036-8075"
+   "group": "综合",
+   "issn": "0036-8075",
+   "top": true
   },
   {
    "id": "sciadv",
    "name": "Science Advances",
-   "group": "Science 系列",
+   "group": "综合",
    "issn": "2375-2548"
   },
   {
-   "id": "nanolett",
-   "name": "Nano Letters",
-   "group": "ACS",
-   "issn": "1530-6984"
+   "id": "ncomms",
+   "name": "Nature Communications",
+   "group": "综合",
+   "issn": "2041-1723"
   },
   {
-   "id": "acsphot",
-   "name": "ACS Photonics",
-   "group": "ACS",
-   "issn": "2330-4022"
+   "id": "pnas",
+   "name": "PNAS",
+   "group": "综合",
+   "issn": "0027-8424"
   },
   {
-   "id": "acsnano",
-   "name": "ACS Nano",
-   "group": "ACS",
-   "issn": "1936-0851"
+   "id": "nsr",
+   "name": "National Science Review",
+   "group": "综合",
+   "issn": "2095-5138"
+  },
+  {
+   "id": "scibull",
+   "name": "Science Bulletin",
+   "group": "综合",
+   "issn": "2095-9273"
+  },
+  {
+   "id": "nphoton",
+   "name": "Nature Photonics",
+   "group": "Nature 子刊",
+   "issn": "1749-4885",
+   "top": true
+  },
+  {
+   "id": "nnano",
+   "name": "Nature Nanotechnology",
+   "group": "Nature 子刊",
+   "issn": "1748-3387",
+   "top": true
+  },
+  {
+   "id": "nphys",
+   "name": "Nature Physics",
+   "group": "Nature 子刊",
+   "issn": "1745-2473",
+   "top": true
+  },
+  {
+   "id": "nmat",
+   "name": "Nature Materials",
+   "group": "Nature 子刊",
+   "issn": "1476-1122",
+   "top": true
+  },
+  {
+   "id": "natelec",
+   "name": "Nature Electronics",
+   "group": "Nature 子刊",
+   "issn": "2520-1131",
+   "top": true
+  },
+  {
+   "id": "natrevphys",
+   "name": "Nature Reviews Physics",
+   "group": "Nature 子刊",
+   "issn": "2522-5820",
+   "top": true
+  },
+  {
+   "id": "natrevmat",
+   "name": "Nature Reviews Materials",
+   "group": "Nature 子刊",
+   "issn": "2058-8437",
+   "top": true
+  },
+  {
+   "id": "commphys",
+   "name": "Communications Physics",
+   "group": "Nature 子刊",
+   "issn": "2399-3650"
+  },
+  {
+   "id": "npjnano",
+   "name": "npj Nanophotonics",
+   "group": "Nature 子刊",
+   "issn": "2948-216X"
+  },
+  {
+   "id": "lsa",
+   "name": "Light: Science & Applications",
+   "group": "光学",
+   "issn": "2047-7538",
+   "top": true
+  },
+  {
+   "id": "elight",
+   "name": "eLight",
+   "group": "光学",
+   "issn": "2662-8643",
+   "top": true
   },
   {
    "id": "optica",
    "name": "Optica",
-   "group": "Optica",
+   "group": "光学",
    "issn": "2334-2536"
-  },
-  {
-   "id": "prj",
-   "name": "Photonics Research",
-   "group": "Optica",
-   "issn": "2327-9125"
-  },
-  {
-   "id": "ol",
-   "name": "Optics Letters",
-   "group": "Optica",
-   "issn": "0146-9592"
-  },
-  {
-   "id": "prl",
-   "name": "Physical Review Letters",
-   "group": "APS",
-   "issn": "0031-9007"
-  },
-  {
-   "id": "prx",
-   "name": "Physical Review X",
-   "group": "APS",
-   "issn": "2160-3308"
-  },
-  {
-   "id": "lpr",
-   "name": "Laser & Photonics Reviews",
-   "group": "Wiley",
-   "issn": "1863-8880"
-  },
-  {
-   "id": "adma",
-   "name": "Advanced Materials",
-   "group": "Wiley",
-   "issn": "0935-9648"
-  },
-  {
-   "id": "adom",
-   "name": "Advanced Optical Materials",
-   "group": "Wiley",
-   "issn": "2195-1071"
   },
   {
    "id": "ap",
    "name": "Advanced Photonics",
-   "group": "其他",
+   "group": "光学",
    "issn": "2577-5421"
+  },
+  {
+   "id": "apn",
+   "name": "Advanced Photonics Nexus",
+   "group": "光学",
+   "issn": "2791-1519"
+  },
+  {
+   "id": "lpr",
+   "name": "Laser & Photonics Reviews",
+   "group": "光学",
+   "issn": "1863-8880"
+  },
+  {
+   "id": "acsphot",
+   "name": "ACS Photonics",
+   "group": "光学",
+   "issn": "2330-4022"
   },
   {
    "id": "nanoph",
    "name": "Nanophotonics",
-   "group": "其他",
+   "group": "光学",
    "issn": "2192-8614"
+  },
+  {
+   "id": "prj",
+   "name": "Photonics Research",
+   "group": "光学",
+   "issn": "2327-9125"
+  },
+  {
+   "id": "aplp",
+   "name": "APL Photonics",
+   "group": "光学",
+   "issn": "2378-0967"
+  },
+  {
+   "id": "adom",
+   "name": "Advanced Optical Materials",
+   "group": "光学",
+   "issn": "2195-1071"
+  },
+  {
+   "id": "adpr",
+   "name": "Advanced Photonics Research",
+   "group": "光学",
+   "issn": "2699-9293"
+  },
+  {
+   "id": "acsaom",
+   "name": "ACS Applied Optical Materials",
+   "group": "光学",
+   "issn": "2771-9855"
   },
   {
    "id": "oea",
    "name": "Opto-Electronic Advances",
-   "group": "其他",
+   "group": "光学",
    "issn": "2096-4579"
+  },
+  {
+   "id": "oes",
+   "name": "Opto-Electronic Science",
+   "group": "光学",
+   "issn": "2097-0382"
+  },
+  {
+   "id": "photonix",
+   "name": "PhotoniX",
+   "group": "光学",
+   "issn": "2662-1991"
+  },
+  {
+   "id": "oe",
+   "name": "Optics Express",
+   "group": "光学",
+   "issn": "1094-4087"
+  },
+  {
+   "id": "ol",
+   "name": "Optics Letters",
+   "group": "光学",
+   "issn": "0146-9592"
+  },
+  {
+   "id": "col",
+   "name": "Chinese Optics Letters",
+   "group": "光学",
+   "issn": "1671-7694"
+  },
+  {
+   "id": "jopt",
+   "name": "Journal of Optics",
+   "group": "光学",
+   "issn": "2040-8978"
+  },
+  {
+   "id": "prl",
+   "name": "Physical Review Letters",
+   "group": "物理",
+   "issn": "0031-9007",
+   "aps": "PRL"
+  },
+  {
+   "id": "prx",
+   "name": "Physical Review X",
+   "group": "物理",
+   "issn": "2160-3308",
+   "aps": "PRX"
+  },
+  {
+   "id": "rmp",
+   "name": "Reviews of Modern Physics",
+   "group": "物理",
+   "issn": "0034-6861",
+   "top": true,
+   "aps": "RMP"
+  },
+  {
+   "id": "prapplied",
+   "name": "Physical Review Applied",
+   "group": "物理",
+   "issn": "2331-7019",
+   "aps": "PRAPPLIED"
+  },
+  {
+   "id": "prr",
+   "name": "Physical Review Research",
+   "group": "物理",
+   "issn": "2643-1564",
+   "aps": "PRRESEARCH"
+  },
+  {
+   "id": "pra",
+   "name": "Physical Review A",
+   "group": "物理",
+   "issn": "2469-9926",
+   "aps": "PRA"
+  },
+  {
+   "id": "prb",
+   "name": "Physical Review B",
+   "group": "物理",
+   "issn": "2469-9950",
+   "aps": "PRB"
+  },
+  {
+   "id": "apr",
+   "name": "Applied Physics Reviews",
+   "group": "物理",
+   "issn": "1931-9401"
+  },
+  {
+   "id": "apl",
+   "name": "Applied Physics Letters",
+   "group": "物理",
+   "issn": "0003-6951"
+  },
+  {
+   "id": "scpma",
+   "name": "Sci. China Phys. Mech. Astron.",
+   "group": "物理",
+   "issn": "1674-7348"
+  },
+  {
+   "id": "nanolett",
+   "name": "Nano Letters",
+   "group": "材料与纳米",
+   "issn": "1530-6984"
+  },
+  {
+   "id": "acsnano",
+   "name": "ACS Nano",
+   "group": "材料与纳米",
+   "issn": "1936-0851"
+  },
+  {
+   "id": "adma",
+   "name": "Advanced Materials",
+   "group": "材料与纳米",
+   "issn": "0935-9648"
+  },
+  {
+   "id": "advsci",
+   "name": "Advanced Science",
+   "group": "材料与纳米",
+   "issn": "2198-3844"
+  },
+  {
+   "id": "afm",
+   "name": "Advanced Functional Materials",
+   "group": "材料与纳米",
+   "issn": "1616-301X"
+  },
+  {
+   "id": "small",
+   "name": "Small",
+   "group": "材料与纳米",
+   "issn": "1613-6810"
+  },
+  {
+   "id": "tap",
+   "name": "IEEE Trans. Antennas Propag.",
+   "group": "工程",
+   "issn": "0018-926X"
+  }
+ ],
+ "default_off": [
+  "ol",
+  "prb",
+  "apl",
+  "adma",
+  "afm",
+  "small",
+  "tap"
+ ],
+ "keywords": [
+  {
+   "id": "k0",
+   "name": "metalens",
+   "topic": "meta",
+   "re": "meta-?lens"
+  },
+  {
+   "id": "k1",
+   "name": "nonlocal metasurface",
+   "topic": "meta",
+   "re": "nonlocal meta"
+  },
+  {
+   "id": "k2",
+   "name": "reconfigurable metasurface",
+   "topic": "meta",
+   "re": "(reconfigurable|tunable|programmable|dynamic|active) metasurface"
+  },
+  {
+   "id": "k3",
+   "name": "meta-hologram",
+   "topic": "meta",
+   "re": "meta-?hologra|metasurface hologra"
+  },
+  {
+   "id": "k4",
+   "name": "Huygens metasurface",
+   "topic": "meta",
+   "re": "huygens"
+  },
+  {
+   "id": "k5",
+   "name": "multilayer metasurface",
+   "topic": "meta",
+   "re": "(bilayer|multilayer|cascaded|stacked) metasurface"
+  },
+  {
+   "id": "k6",
+   "name": "achromatic",
+   "topic": "meta",
+   "re": "achromat"
+  },
+  {
+   "id": "k7",
+   "name": "structural color",
+   "topic": "meta",
+   "re": "structural colou?r"
+  },
+  {
+   "id": "k8",
+   "name": "hyperbolic",
+   "topic": "mm",
+   "re": "hyperbolic"
+  },
+  {
+   "id": "k9",
+   "name": "ENZ",
+   "topic": "mm",
+   "re": "epsilon-near-zero|\\bENZ\\b"
+  },
+  {
+   "id": "k10",
+   "name": "time-varying / time crystal",
+   "topic": "mm",
+   "re": "time-varying|photonic time crystal|temporal (interface|boundar)|time (interface|reflection)"
+  },
+  {
+   "id": "k11",
+   "name": "cloaking",
+   "topic": "mm",
+   "re": "cloak|invisib"
+  },
+  {
+   "id": "k12",
+   "name": "acoustic metamaterial",
+   "topic": "mm",
+   "re": "acoustic (metamaterial|metasurface)"
+  },
+  {
+   "id": "k13",
+   "name": "mechanical metamaterial",
+   "topic": "mm",
+   "re": "mechanical metamaterial"
+  },
+  {
+   "id": "k14",
+   "name": "valley Hall",
+   "topic": "topo",
+   "re": "valley[- ]hall|valley photonic"
+  },
+  {
+   "id": "k15",
+   "name": "higher-order topology",
+   "topic": "topo",
+   "re": "higher-order topolog|corner state"
+  },
+  {
+   "id": "k16",
+   "name": "exceptional point",
+   "topic": "topo",
+   "re": "exceptional point|\\bEPs?\\b"
+  },
+  {
+   "id": "k17",
+   "name": "non-Hermitian",
+   "topic": "topo",
+   "re": "non-hermitian"
+  },
+  {
+   "id": "k18",
+   "name": "skin effect",
+   "topic": "topo",
+   "re": "skin effect"
+  },
+  {
+   "id": "k19",
+   "name": "Floquet",
+   "topic": "topo",
+   "re": "floquet"
+  },
+  {
+   "id": "k20",
+   "name": "synthetic dimension",
+   "topic": "topo",
+   "re": "synthetic (dimension|frequency|space)"
+  },
+  {
+   "id": "k21",
+   "name": "topological laser",
+   "topic": "topo",
+   "re": "topological (laser|lasing)"
+  },
+  {
+   "id": "k22",
+   "name": "PT symmetry",
+   "topic": "topo",
+   "re": "\\bPT[- ]symmetr|parity-time"
+  },
+  {
+   "id": "k23",
+   "name": "OAM / vortex",
+   "topic": "sl",
+   "re": "orbital angular momentum|\\bOAM\\b|optical vorte|vortex beam"
+  },
+  {
+   "id": "k24",
+   "name": "optical skyrmion",
+   "topic": "sl",
+   "re": "skyrmion|meron"
+  },
+  {
+   "id": "k25",
+   "name": "vector beam",
+   "topic": "sl",
+   "re": "vector (beam|vortex|field|light)"
+  },
+  {
+   "id": "k26",
+   "name": "space-time wave packet",
+   "topic": "sl",
+   "re": "space-?time (wave ?packet|beam|light|vortex)|spatiotemporal (vortex|light|wave)|toroidal (pulse|light)"
+  },
+  {
+   "id": "k27",
+   "name": "optical tweezers",
+   "topic": "sl",
+   "re": "optical (tweezer|trap|manipulat)"
+  },
+  {
+   "id": "k28",
+   "name": "spin-orbit",
+   "topic": "sl",
+   "re": "spin[- ]orbit|photonic spin hall"
+  },
+  {
+   "id": "k29",
+   "name": "polarization singularity",
+   "topic": "sl",
+   "re": "polarization singular|C-point|L-line"
+  },
+  {
+   "id": "k30",
+   "name": "Airy / Bessel",
+   "topic": "sl",
+   "re": "airy beam|bessel beam"
+  },
+  {
+   "id": "k31",
+   "name": "BIC / quasi-BIC",
+   "topic": "nano",
+   "re": "bound states? in the continuum|\\bq?-?BICs?\\b|quasi-bic"
+  },
+  {
+   "id": "k32",
+   "name": "Mie / anapole",
+   "topic": "nano",
+   "re": "\\bmie\\b|anapole"
+  },
+  {
+   "id": "k33",
+   "name": "plasmonic nanocavity",
+   "topic": "nano",
+   "re": "nanocavit|nanogap|picocavit|gap plasmon"
+  },
+  {
+   "id": "k34",
+   "name": "hot carriers",
+   "topic": "nano",
+   "re": "hot (electron|carrier)"
+  },
+  {
+   "id": "k35",
+   "name": "surface lattice resonance",
+   "topic": "nano",
+   "re": "surface lattice resonance|\\bSLRs?\\b"
+  },
+  {
+   "id": "k36",
+   "name": "photonic crystal",
+   "topic": "nano",
+   "re": "photonic crystal"
+  },
+  {
+   "id": "k37",
+   "name": "exciton-polariton",
+   "topic": "nano",
+   "re": "exciton[- ]polariton"
+  },
+  {
+   "id": "k38",
+   "name": "phonon-polariton",
+   "topic": "nano",
+   "re": "phonon[- ]polariton"
+  },
+  {
+   "id": "k39",
+   "name": "strong coupling",
+   "topic": "nano",
+   "re": "strong (light-matter )?coupling|rabi splitting"
+  },
+  {
+   "id": "k40",
+   "name": "chirality / CD",
+   "topic": "nano",
+   "re": "chiral|circular dichroism"
+  },
+  {
+   "id": "k41",
+   "name": "moiré photonics",
+   "topic": "nano",
+   "re": "moir[eé]"
+  },
+  {
+   "id": "k42",
+   "name": "nanolaser",
+   "topic": "nano",
+   "re": "nanolaser|microlaser|lasing"
+  },
+  {
+   "id": "k43",
+   "name": "thermal / radiative cooling",
+   "topic": "nano",
+   "re": "radiative cooling|thermal (emission|emitter|radiation|photonic)|thermophotovolt"
+  },
+  {
+   "id": "k44",
+   "name": "perovskite",
+   "topic": "nano",
+   "re": "perovskite"
+  },
+  {
+   "id": "k45",
+   "name": "biosensing",
+   "topic": "sens",
+   "re": "biosens|label-free|biomolecul|virus detection"
+  },
+  {
+   "id": "k46",
+   "name": "SERS",
+   "topic": "sens",
+   "re": "\\bSERS\\b|surface-enhanced raman"
+  },
+  {
+   "id": "k47",
+   "name": "refractive index sensing",
+   "topic": "sens",
+   "re": "refractive[- ]index sens|refractometric"
+  },
+  {
+   "id": "k48",
+   "name": "gas sensing",
+   "topic": "sens",
+   "re": "gas sens"
+  },
+  {
+   "id": "k49",
+   "name": "photodetector",
+   "topic": "sens",
+   "re": "photodetect|photodiode"
+  },
+  {
+   "id": "k50",
+   "name": "spectrometer",
+   "topic": "sens",
+   "re": "spectrometer"
+  },
+  {
+   "id": "k51",
+   "name": "LiDAR / ranging",
+   "topic": "sens",
+   "re": "lidar|ranging|optical phased array|\\bOPA\\b"
+  },
+  {
+   "id": "k52",
+   "name": "diffractive network",
+   "topic": "comp",
+   "re": "diffractive (deep )?(neural|network|processor|optical)"
+  },
+  {
+   "id": "k53",
+   "name": "optical neural network",
+   "topic": "comp",
+   "re": "optical neural|photonic neural|\\bONNs?\\b"
+  },
+  {
+   "id": "k54",
+   "name": "photonic tensor core",
+   "topic": "comp",
+   "re": "tensor core|photonic (matrix|accelerat)|matrix multiplic"
+  },
+  {
+   "id": "k55",
+   "name": "reservoir computing",
+   "topic": "comp",
+   "re": "reservoir comput"
+  },
+  {
+   "id": "k56",
+   "name": "optical analog computing",
+   "topic": "comp",
+   "re": "(analog|analogue) (optical )?comput|optical differentiat|edge detection"
+  },
+  {
+   "id": "k57",
+   "name": "Ising machine",
+   "topic": "comp",
+   "re": "ising machine"
+  },
+  {
+   "id": "k58",
+   "name": "graphene",
+   "topic": "twod",
+   "re": "graphene"
+  },
+  {
+   "id": "k59",
+   "name": "TMD",
+   "topic": "twod",
+   "re": "dichalcogenide|\\bTMDs?\\b|MoS2|WS2|WSe2|MoSe2|MoTe2"
+  },
+  {
+   "id": "k60",
+   "name": "hBN",
+   "topic": "twod",
+   "re": "\\bhBN\\b|hexagonal boron nitride"
+  },
+  {
+   "id": "k61",
+   "name": "vdW heterostructure",
+   "topic": "twod",
+   "re": "van der waals|\\bvdW\\b"
+  },
+  {
+   "id": "k62",
+   "name": "MXene / black phosphorus",
+   "topic": "twod",
+   "re": "mxene|black phosphorus"
+  },
+  {
+   "id": "k63",
+   "name": "thin-film lithium niobate",
+   "topic": "chip",
+   "re": "lithium niobate|\\bTFLN\\b|\\bLNOI\\b"
+  },
+  {
+   "id": "k64",
+   "name": "silicon nitride",
+   "topic": "chip",
+   "re": "silicon nitride|\\bSiN\\b|Si3N4"
+  },
+  {
+   "id": "k65",
+   "name": "microcomb",
+   "topic": "chip",
+   "re": "microcomb|soliton (comb|microcomb)|kerr comb|frequency comb"
+  },
+  {
+   "id": "k66",
+   "name": "microring",
+   "topic": "chip",
+   "re": "microring|micro-ring|ring resonator|microresonator"
+  },
+  {
+   "id": "k67",
+   "name": "electro-optic modulator",
+   "topic": "chip",
+   "re": "electro-optic|modulator"
+  },
+  {
+   "id": "k68",
+   "name": "silicon photonics",
+   "topic": "chip",
+   "re": "silicon photonic"
+  },
+  {
+   "id": "k69",
+   "name": "heterogeneous integration",
+   "topic": "chip",
+   "re": "heterogeneous integrat|hybrid integrat"
+  },
+  {
+   "id": "k70",
+   "name": "photonic integrated circuit",
+   "topic": "chip",
+   "re": "photonic integrated circuit|\\bPICs?\\b|programmable photonic"
+  },
+  {
+   "id": "k71",
+   "name": "lensless imaging",
+   "topic": "img",
+   "re": "lensless|lens-free"
+  },
+  {
+   "id": "k72",
+   "name": "ptychography",
+   "topic": "img",
+   "re": "ptychograph"
+  },
+  {
+   "id": "k73",
+   "name": "single-pixel / ghost",
+   "topic": "img",
+   "re": "single-pixel|ghost imaging"
+  },
+  {
+   "id": "k74",
+   "name": "hyperspectral",
+   "topic": "img",
+   "re": "hyperspectral|multispectral|spectral imaging"
+  },
+  {
+   "id": "k75",
+   "name": "light-field camera",
+   "topic": "img",
+   "re": "light-field (camera|imaging|display)|plenoptic"
+  },
+  {
+   "id": "k76",
+   "name": "phase retrieval",
+   "topic": "img",
+   "re": "phase retrieval|quantitative phase"
+  },
+  {
+   "id": "k77",
+   "name": "super-resolution",
+   "topic": "img",
+   "re": "super-resolution|superresolution"
+  },
+  {
+   "id": "k78",
+   "name": "end-to-end design",
+   "topic": "img",
+   "re": "end-to-end"
+  },
+  {
+   "id": "k79",
+   "name": "scattering imaging",
+   "topic": "img",
+   "re": "(imaging )?through scattering|scattering media|wavefront shaping"
+  },
+  {
+   "id": "k80",
+   "name": "polarization imaging",
+   "topic": "img",
+   "re": "polarimetr|polarization imag"
+  },
+  {
+   "id": "k81",
+   "name": "AR / VR display",
+   "topic": "img",
+   "re": "augmented reality|virtual reality|\\bAR\\b|near-eye|holographic display"
+  },
+  {
+   "id": "k82",
+   "name": "depth sensing",
+   "topic": "img",
+   "re": "depth (imaging|sensing|estimation|camera)"
+  },
+  {
+   "id": "k83",
+   "name": "SHG / THG",
+   "topic": "nl",
+   "re": "second[- ]harmonic|third[- ]harmonic|\\bSHG\\b|\\bTHG\\b"
+  },
+  {
+   "id": "k84",
+   "name": "high-harmonic",
+   "topic": "nl",
+   "re": "high[- ]harmonic|\\bHHG\\b"
+  },
+  {
+   "id": "k85",
+   "name": "four-wave mixing",
+   "topic": "nl",
+   "re": "four-wave mixing|\\bFWM\\b"
+  },
+  {
+   "id": "k86",
+   "name": "SPDC",
+   "topic": "nl",
+   "re": "parametric down|\\bSPDC\\b"
+  },
+  {
+   "id": "k87",
+   "name": "soliton",
+   "topic": "nl",
+   "re": "soliton"
+  },
+  {
+   "id": "k88",
+   "name": "optical bistability",
+   "topic": "nl",
+   "re": "bistab"
+  },
+  {
+   "id": "k89",
+   "name": "ultrafast",
+   "topic": "nl",
+   "re": "ultrafast|femtosecond|attosecond"
+  },
+  {
+   "id": "k90",
+   "name": "single-photon source",
+   "topic": "quant",
+   "re": "single[- ]photon (source|emitter|emission)"
+  },
+  {
+   "id": "k91",
+   "name": "quantum emitter",
+   "topic": "quant",
+   "re": "quantum emitter|color cent|colour cent|NV cent"
+  },
+  {
+   "id": "k92",
+   "name": "entangled photons",
+   "topic": "quant",
+   "re": "entangle|photon pair"
+  },
+  {
+   "id": "k93",
+   "name": "quantum dot",
+   "topic": "quant",
+   "re": "quantum dot"
+  },
+  {
+   "id": "k94",
+   "name": "squeezed light",
+   "topic": "quant",
+   "re": "squeez"
+  },
+  {
+   "id": "k95",
+   "name": "quantum metasurface",
+   "topic": "quant",
+   "re": "quantum metasurface|metasurface.{0,40}quantum"
+  },
+  {
+   "id": "k96",
+   "name": "inverse design",
+   "topic": "ai",
+   "re": "inverse[- ]design|topology optimi"
+  },
+  {
+   "id": "k97",
+   "name": "deep learning",
+   "topic": "ai",
+   "re": "deep learning|neural network|machine learning"
+  },
+  {
+   "id": "k98",
+   "name": "LLM / agent",
+   "topic": "ai",
+   "re": "large language model|\\bLLMs?\\b|agentic|\\bagents?\\b"
+  },
+  {
+   "id": "k99",
+   "name": "differentiable / generative",
+   "topic": "ai",
+   "re": "differentiable|generative|diffusion model"
+  },
+  {
+   "id": "k100",
+   "name": "nanofabrication / 3D printing",
+   "topic": "ai",
+   "re": "two-photon (lithograph|polymeri)|3D print|nanoimprint|direct laser writ"
   }
  ]
 }

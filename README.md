@@ -1,6 +1,6 @@
 # 微纳光学新文献
 
-每天自动汇总超表面、超材料、拓扑光学、光场调控与微纳光学方向的新论文：arXiv 预印本，加上 Nature 系列、Science 系列、ACS、Optica、APS、Wiley、Advanced Photonics、Nanophotonics、OEA 共 24 种期刊（经 Crossref）。每篇论文有主题标签和中文一句话要点，访客可以在自己的浏览器里收藏、标记已读。
+每天自动汇总超表面、超材料、拓扑光学、光场调控、微纳光学、传感、光计算、二维材料、片上光学、计算成像、非线性与量子光子学方向的新论文：arXiv 预印本，加上 53 种期刊（经 Crossref，通讯作者来自 OpenAlex）。每篇论文有主题标签和中文一句话要点，访客可以在自己的浏览器里收藏、标记已读。
 
 这是一个纯静态网站，用 GitHub Pages 免费托管，GitHub Actions 每天北京时间 8:30 抓取一次数据并重新发布。
 
@@ -35,3 +35,9 @@
 
 - 期刊列表、arXiv 检索式、关键词规则和主题颜色都在 `config.json` 里，改完推送即可生效。
 - 本地预览：`python3 scripts/update.py && python3 -m http.server`，然后打开 http://localhost:8000 。
+
+## 页面
+
+- `index.html`：文献列表（缩略图、通讯作者、中文要点、收藏/已读）。
+- `explore.html`：趋势与探索（主题趋势、升温关键词、来源→主题→关键词流向图、关键词共现网络、自由输入关键词对比），用开源 Apache ECharts 绘制。
+- 数据文件：`data.json`（近 31 天论文）、`trends.json`（逐日累积的主题/关键词计数）、`summaries.json`、`authors.json`、`thumbs.json`（缓存）。
