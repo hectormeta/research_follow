@@ -453,7 +453,7 @@ function render(){
 function updateStatus(){
   const errs = SOURCES.filter(x => srcInfo[x.id].err);
   const parts = [];
-  if (DATA.generated) parts.push(`数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}，覆盖 arXiv 与 ${SOURCES.length - 1} 种期刊，每天自动更新`);
+  if (DATA.generated) parts.push(`数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}，覆盖 ${SOURCES.filter(s => s.preprint).length} 个预印本平台与 ${SOURCES.filter(s => !s.preprint).length} 种期刊，每天自动更新`);
   if (DATA.loadError) parts.push(`<span class="err">数据文件读取失败：${esc(DATA.loadError)}</span>`);
   else if (errs.length) parts.push(`<span class="err">${errs.map(e => e.name).join('、')} 本次抓取失败，显示的是上一次的数据</span>`);
   $('#status').innerHTML = parts.join('；');
