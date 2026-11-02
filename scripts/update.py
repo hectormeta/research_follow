@@ -176,16 +176,17 @@ def fetch_crossref(s, frm=None, until=None):
         st = {'t0': time.time(), 'items': [], 'cursor': '*', 'done': False}
     while not st['done']:
         check_time()
-        url = ('https://api.crossref.org/works?filter=' + flt + '&sort=created&order=desc&rows=1000'
+        rows = 200 if until else 1000   # history queries are slow server-side; small pages cache progress
+        url = ('https://api.crossref.org/works?filter=' + flt + f'&sort=created&order=desc&rows={rows}'
                + '&select=DOI,title,author,created,abstract,URL&mailto=' + urllib.parse.quote(CONTACT)
                + '&cursor=' + urllib.parse.quote(st['cursor']))
-        m = json.loads(get(url, 150))['message']
+        m = json.loads(get(url, 110, tries=3))['message']
         page = m.get('items', [])
         st['raw'] = st.get('raw', 0) + len(page)
         if s.get('prefix'):   # big preprint servers: keep only candidate papers in the page cache
             page = [i for i in page if BROAD.search(clean((i.get('title') or [''])[0]) + ' ' + clean(i.get('abstract')))]
         st['items'] += page
-        st['done'] = len(m.get('items', [])) < 1000 or not m.get('next-cursor') or st['raw'] >= m.get('total-results', 0)
+        st['done'] = len(m.get('items', [])) < rows or not m.get('next-cursor') or st['raw'] >= m.get('total-results', 0)
         st['cursor'] = m.get('next-cursor') or st['cursor']
         jsave(pc, st)
     items = st['items']
@@ -738,7 +739,7 @@ def backfill(threads):
         jsave(f, lst)
         return True
     ax = [j for j in jobs if j[0]['id'] == 'arxiv']
-    cr = sorted([j for j in jobs if j[0]['id'] != 'arxiv'], key=lambda j: -counts.get(j[0]['id'], 0))
+    cr = sorted([j for j in jobs if j[0]['id'] != 'arxiv'], key=lambda j: counts.get(j[0]['id'], 0))  # small jobs first
     with ThreadPoolExecutor(1) as axp, ThreadPoolExecutor(threads) as crp:
         fa = [axp.submit(run, j) for j in ax]; fc = [crp.submit(run, j) for j in cr]
         res = [f.result() for f in fa + fc]
