@@ -38,6 +38,7 @@ MAX_SUMMARIES = int(os.environ.get('MAX_SUMMARIES', '1500'))
 TOPIC_IDS = {t['name']: t['id'] for t in cfg['topics']}
 CTX = re.compile(cfg['context'], re.I)
 PHYS_CTX = re.compile(cfg.get('physics_context', '(?!)'), re.I)
+SKIP_TITLE = re.compile(cfg.get('skip_title', '(?!)'), re.I)
 OA_KEY = os.environ.get('OPENALEX_API_KEY', '').strip() or cfg.get('openalex_key', '')
 TOPIC_RE = [(t, re.compile(t['re'], re.I)) for t in cfg['topics']]
 SRC = {s['id']: s for s in cfg['sources']}
@@ -240,7 +241,7 @@ def fetch_all(threads):
         except Exception as e:
             lst, err = [], f'{type(e).__name__}: {e}'[:160]
         # papers without an abstract (APS, Science, ...) are kept for now and filtered after OpenAlex enrichment
-        lst = [p for p in lst if not p.get('abs') or BROAD.search(p['title'] + ' ' + p['abs'])]
+        lst = [p for p in lst if not p.get('abs') or s.get('fallback') or BROAD.search(p['title'] + ' ' + p['abs'])]
         if not err:  # never cache failures, so the next run retries
             jsave(f, {'t': time.time(), 'papers': lst, 'err': err})
         return s['id'], lst, err
@@ -492,14 +493,17 @@ def publish(p, authors, thumbs, cache, slim=False):
         q = {f: p[f] for f in SLIM if f in p}
     else:
         phys = bool(SRC.get(p['src'], {}).get('physics'))
+        fb = SRC.get(p['src'], {}).get('fallback')   # optics journals: every research paper counts
         a = authors.get(k, {})
         text = p['title'] + ' ' + (p.get('abs') or '')
+        if SKIP_TITLE.search(p['title'].strip()):
+            return None
         if not p.get('abs') and 'rt' in a:
             rt, kw = a['rt'], a.get('kw', [])          # derived earlier from an OpenAlex abstract
         else:
-            if not BROAD.search(text) and not (phys and PHYS_CTX.search(text)):
+            if not BROAD.search(text) and not (phys and PHYS_CTX.search(text)) and not fb:
                 return None
-            rt = rule_topics(text, phys)
+            rt = rule_topics(text, phys or bool(fb)) or ([fb] if fb else [])
             kw = keywords(text) if rt else []
             if p.get('_oa') and k in authors:
                 authors[k]['rt'], authors[k]['kw'] = rt, kw
@@ -508,7 +512,7 @@ def publish(p, authors, thumbs, cache, slim=False):
             # abstract came from OpenAlex: also keep title-only topics, which is what the history archive uses,
             # so trend charts compare like with like
             t0 = p['title']
-            ta = rule_topics(t0, phys) if (BROAD.search(t0) or (phys and PHYS_CTX.search(t0))) else []
+            ta = (rule_topics(t0, phys or bool(fb)) or ([fb] if fb else [])) if (BROAD.search(t0) or (phys and PHYS_CTX.search(t0)) or fb) else []
         q = {f: p[f] for f in ('key', 'src', 'title', 'ts', 'url') if f in p}
         for f in ('sub', 'pdf'):
             if p.get(f):
@@ -585,6 +589,79 @@ def build_trends():
     print('trends days', len(days), 'papers', sum(e['n'] for e in days.values()))
 
 
+def build_explore():
+    """Compact indexes for explore.html: x/recent.json (window) and x/hist.json (older archive).
+    Row = [source index, minutes since start, topic bitmask, [keyword ints], title, key, zh, claude keywords]."""
+    xdir = ROOT / 'x'
+    xdir.mkdir(exist_ok=True)
+    src_i = {s['id']: i for i, s in enumerate(cfg['sources'])}
+    top_i = {t['id']: i for i, t in enumerate(cfg['topics'])}
+    t0 = int(dt.datetime.fromisoformat(START + 'T00:00:00+08:00').timestamp() * 1000)
+    win = NOW_MS - WINDOW * DAY_MS
+
+    def row(q):
+        tt = q.get('ta', q.get('rt')) or []
+        if not tt or q['src'] not in src_i or SRC.get(q['src'], {}).get('trend') is False:
+            return None
+        mask = 0
+        for t in tt:
+            if t in top_i:
+                mask |= 1 << top_i[t]
+        kws = [int(k[1:]) for k in (q['tk'] if 'tk' in q else q.get('kw', [])) if k[1:].isdigit()]
+        r = [src_i[q['src']], max(0, (q['ts'] - t0) // 60000), mask, kws, q['title'], q['key']]
+        if q.get('zh') or q.get('ak'):
+            r += [q.get('zh', ''), ' '.join(q.get('ak', []))]
+        return r
+    recent, hist, seen = [], [], set()
+    for q in jload(ROOT / 'data.json', {}).get('papers', []):
+        r = row(q)
+        if r:
+            recent.append(r); seen.add(q['key'])
+    for f in sorted(ARCH.glob('20??-??.json')):
+        for q in jload(f, {}).get('papers', []):
+            if q['key'] in seen or q['ts'] >= win:
+                continue
+            r = row(q)
+            if r:
+                hist.append(r); seen.add(q['key'])
+    meta = {'start': START, 't0': t0, 'generated': NOW_MS, 'sources': [s['id'] for s in cfg['sources']]}
+    jsave(xdir / 'recent.json', dict(meta, rows=recent))
+    jsave(xdir / 'hist.json', dict(meta, rows=hist))
+    print('explore index', len(recent), len(hist), (xdir / 'recent.json').stat().st_size, (xdir / 'hist.json').stat().st_size, flush=True)
+
+
+def digest_input(path, days=3):
+    """Material for the daily highlights ticker: notable recent papers and keyword momentum."""
+    d = jload(ROOT / 'data.json', {})
+    ps = d.get('papers', [])
+    recent = [q for q in ps if NOW_MS - q['ts'] < days * DAY_MS and q.get('rel', 1) > 0 and q.get('rt')]
+    def score(q):
+        return (3 if SRC.get(q['src'], {}).get('top') else 0) + (2 if q.get('rel') == 2 else 0) + (1 if q.get('zh') else 0)
+    recent.sort(key=lambda q: (-score(q), -q['ts']))
+    def last_author(q):
+        au = [x for x in q.get('au', []) if len(x) > 1]
+        cor = [x[0] for x in au if x[1] == 1] or [x[0] for x in au if x[1] == 2] or [x[0] for x in au[-1:]]
+        return cor[0] if cor else ''
+    cand = [{'key': q['key'], 'venue': SRC.get(q['src'], {}).get('name', q['src']), 'top': bool(SRC.get(q['src'], {}).get('top')),
+             'title': q['title'], 'zh': q.get('zh', ''), 'corresponding': last_author(q), 'n_authors': q.get('na')}
+            for q in recent[:40]]
+    def kc(lo, hi):
+        c = {}
+        for q in ps:
+            if lo <= NOW_MS - q['ts'] < hi:
+                for k in q.get('kw', []):
+                    c[k] = c.get(k, 0) + 1
+        return c
+    cur, prev = kc(0, 7 * DAY_MS), kc(7 * DAY_MS, 28 * DAY_MS)
+    names = {k['id']: k['name'] for k in cfg.get('keywords', [])}
+    rise = sorted(((cur[k] / (prev.get(k, 0) / 3 + 1), k) for k in cur if cur[k] >= 4), reverse=True)[:10]
+    out = {'date': dt.datetime.fromtimestamp(NOW_MS / 1000, TZ).date().isoformat(), 'papers_last_days': len(recent),
+           'candidates': cand,
+           'rising_keywords_7d_vs_prev3w': [{'keyword': names.get(k, k), 'last7d': cur[k], 'prev_weekly_avg': round(prev.get(k, 0) / 3, 1)} for _, k in rise]}
+    Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding='utf-8')
+    print('digest input', len(cand), 'candidates')
+
+
 def sync_archive_summaries():
     """Copy summaries/topics into archive entries (used after --apply)."""
     cache = jload(ROOT / 'summaries.json', {})
@@ -653,7 +730,7 @@ def backfill(threads):
             print('backfill failed', s['id'], m, str(e)[:100], flush=True)
             return False
         phys = SRC.get(s['id'], {}).get('physics')
-        lst = [p for p in lst if (not p.get('abs') and (BROAD.search(p['title']) or (phys and PHYS_CTX.search(p['title']))))
+        lst = [p for p in lst if s.get('fallback') or (not p.get('abs') and (BROAD.search(p['title']) or (phys and PHYS_CTX.search(p['title']))))
                or (p.get('abs') and BROAD.search(p['title'] + ' ' + p['abs']))]
         for p in lst:   # journal abstracts are only needed for tagging; keep them short in the local cache
             if p['src'] != 'arxiv':
@@ -672,17 +749,28 @@ def backfill(threads):
     authors = jload(ROOT / 'authors.json', {}); thumbs = jload(ROOT / 'thumbs.json', {}); cache = jload(ROOT / 'summaries.json', {})
     win_ms = NOW_MS - WINDOW * DAY_MS
     out = {m: {} for m in months}
+    cfg_mtime = (ROOT / 'config.json').stat().st_mtime
     for s, m in jobs:
-        for p in jload(hist / f"src_{s['id']}_{m or 'all'}.json", []):
-            if p['ts'] >= win_ms or month_of(p['ts']) not in out:
+        sf = hist / f"src_{s['id']}_{m or 'all'}.json"
+        pf = hist / f"pub_{s['id']}_{m or 'all'}.json"
+        # published rows are cached per job file; recomputed only when the source file or config changes
+        if pf.exists() and pf.stat().st_mtime > max(sf.stat().st_mtime, cfg_mtime):
+            pubs = jload(pf, [])
+        else:
+            pubs = [q for q in (publish(p, authors, thumbs, cache, slim=True) for p in jload(sf, [])) if q and q.get('rt')]
+            jsave(pf, pubs)
+        for q in pubs:
+            if q['ts'] >= win_ms or month_of(q['ts']) not in out:
                 continue            # the recent window is owned by the daily run
-            q = publish(p, authors, thumbs, cache, slim=True)
-            if q:
-                out[month_of(p['ts'])][q['key']] = q
+            s2 = cache.get(q['key'])
+            if s2:
+                q.update({'zh': s2['zh'], 'tp': s2['tp'], 'rel': s2['rel']})
+            out[month_of(q['ts'])][q['key']] = q
     for m, d in out.items():
         write_archive({m: list(d.values())}, replace_after=None)
         print('archive', m, len(d), flush=True)
     build_trends()
+    build_explore()
     return True
 
 
@@ -692,18 +780,22 @@ def main():
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument('--budget', type=float, default=0, help='seconds; 0 = unlimited')
-    ap.add_argument('--threads', type=int, default=int(os.environ.get('CR_THREADS', '2')))
+    ap.add_argument('--threads', type=int, default=int(os.environ.get('CR_THREADS', '2')))  # Crossref polite pool allows 3 concurrent requests
     ap.add_argument('--todo', help='write papers still lacking a summary to this JSON file')
     ap.add_argument('--todo-days', type=float, default=10)
     ap.add_argument('--apply', help='merge summaries from this JSON file and exit')
     ap.add_argument('--if-stale', type=float, default=0, help='skip if data.json is younger than N hours')
     ap.add_argument('--no-enrich', action='store_true')
     ap.add_argument('--backfill', action='store_true', help='fetch history since start_date into archive/')
+    ap.add_argument('--digest-in', help='write material for the daily highlights (digest.json) to this file and exit')
     args = ap.parse_args()
 
+    if args.digest_in:
+        return digest_input(args.digest_in)
     if args.apply:
         apply_summaries(args.apply)
         sync_archive_summaries()
+        build_explore()
         return
     if args.budget:
         DEADLINE = time.time() + args.budget
@@ -786,6 +878,7 @@ def main():
         pass
     write_archive(by_m, replace_after=win_ms)
     build_trends()
+    build_explore()
     if args.todo:
         Path(args.todo).write_text(json.dumps(todo, ensure_ascii=False, indent=0), encoding='utf-8')
     print('papers', len(papers), 'with summary', sum(1 for q in papers if 'zh' in q), 'todo', len(todo),

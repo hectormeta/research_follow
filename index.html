@@ -29,6 +29,18 @@ header .sub b{font-weight:600;color:var(--ink)}
 .status{margin-top:4px;color:var(--ink3);font-size:13px;min-height:20px}
 .status .err{color:#B3261E}
 .nav{display:flex;gap:8px;margin-top:4px}
+header > div:first-child{flex:1 1 520px;min-width:0}
+.digest{display:flex;align-items:center;gap:10px;margin-top:10px;max-width:760px;background:var(--paper);border:1px solid var(--rule);border-left:3px solid #E2B34A;border-radius:8px;padding:6px 8px 6px 10px}
+.dg-label{flex:none;font-size:12.5px;font-weight:650;color:#8A6100}
+.dg-win{flex:1;min-width:0;height:22px;overflow:hidden;position:relative}
+.dg-text{display:block;width:100%;border:0;background:none;padding:0;text-align:left;font-size:13.5px;line-height:22px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.dg-text:hover{color:var(--focus)}
+.dg-text.out{animation:dgOut .35s ease forwards}.dg-text.in{animation:dgIn .35s ease}
+@keyframes dgOut{to{transform:translateY(-100%);opacity:0}}@keyframes dgIn{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}
+.dg-nav{flex:none;display:flex;align-items:center;gap:2px;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.dg-nav button{border:0;background:none;width:20px;height:20px;border-radius:4px;cursor:pointer;color:var(--ink2);font-size:15px;line-height:18px;padding:0}
+.dg-nav button:hover{background:#E8EDF0}
+@media (max-width:680px){.dg-text{white-space:normal;line-height:1.45}.dg-win{height:auto;max-height:42px}}
 .nav a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:14px;font-weight:600;color:#fff;background:var(--navy);border-radius:8px;padding:7px 14px}
 .nav a:hover{background:#2A4668}
 .nav svg{width:16px;height:16px}
@@ -134,6 +146,11 @@ header .sub b{font-weight:600;color:var(--ink)}
       <h1>微纳光学新文献</h1>
       <p class="sub" id="sub">正在读取论文</p>
       <div class="status" id="status" role="status" aria-live="polite"></div>
+      <div class="digest" id="digest" hidden>
+        <span class="dg-label">今日看点</span>
+        <div class="dg-win"><button class="dg-text" id="dgText" type="button"></button></div>
+        <span class="dg-nav"><button id="dgPrev" type="button" aria-label="上一条">‹</button><span id="dgPos"></span><button id="dgNext" type="button" aria-label="下一条">›</button></span>
+      </div>
     </div>
     <nav class="nav"><a href="explore.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 13.5h13M3 11l3-4 3 2 4-6"/></svg>趋势与探索</a></nav>
   </header>
@@ -521,6 +538,40 @@ const ctl = $('#controls');
 new IntersectionObserver(([en]) => ctl.classList.toggle('stuck', en.intersectionRatio < 1), { threshold:[1], rootMargin:'-1px 0px 0px 0px' }).observe(ctl);
 // deep link: index.html?q=keyword
 const qp = new URLSearchParams(location.search).get('q'); if (qp) { prefs.q = qp; $('#q').value = qp; }
+
+/* ---------- daily highlights ticker (digest.json, written by Claude each day) ---------- */
+async function initDigest(){
+  let dg; try { dg = await fetch('digest.json', { cache:'no-cache' }).then(r => r.ok ? r.json() : null); } catch {}
+  const items = (dg && dg.items || []).filter(x => x && x.text);
+  if (!items.length) return;
+  const box = $('#digest'), txt = $('#dgText'); box.hidden = false;
+  const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let i = 0, timer = 0, paused = false;
+  const show = (n, anim) => {
+    i = (n + items.length) % items.length;
+    const set = () => { txt.textContent = items[i].text; txt.title = items[i].text; $('#dgPos').textContent = `${i + 1}/${items.length}`; };
+    if (!anim || reduce) return set();
+    txt.classList.add('out');
+    setTimeout(() => { txt.classList.remove('out'); set(); txt.classList.add('in'); setTimeout(() => txt.classList.remove('in'), 400); }, 330);
+  };
+  const tick = () => { clearInterval(timer); if (!reduce) timer = setInterval(() => { if (!paused && !document.hidden) show(i + 1, true); }, 6500); };
+  box.addEventListener('mouseenter', () => paused = true); box.addEventListener('mouseleave', () => paused = false);
+  box.addEventListener('focusin', () => paused = true); box.addEventListener('focusout', () => paused = false);
+  $('#dgPrev').onclick = () => { show(i - 1, true); tick(); };
+  $('#dgNext').onclick = () => { show(i + 1, true); tick(); };
+  txt.onclick = async () => {
+    const it = items[i];
+    if (it.q) { prefs.q = it.q; $('#q').value = it.q; prefs.topics = []; limit = 60; persist(); render(); window.scrollTo({ top: $('#controls').offsetTop, behavior:'smooth' }); return; }
+    if (it.key) {
+      let el = document.getElementById('i-' + it.key);
+      if (!el && papers.has(it.key)) { prefs.q = papers.get(it.key).title.slice(0, 60); $('#q').value = prefs.q; prefs.topics = []; prefs.topOnly = false; limit = 60; persist(); render(); el = document.getElementById('i-' + it.key); }
+      if (el) { el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block:'center' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+      else if (it.url) window.open(it.url, '_blank', 'noopener');
+    }
+  };
+  show(0, false); tick();
+}
+initDigest();
 
 /* ---------- boot ---------- */
 const src = DATA.sources || {};

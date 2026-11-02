@@ -85,6 +85,12 @@
    "color": "#3F3F9E"
   },
   {
+   "id": "gen",
+   "name": "其他光学",
+   "color": "#8A96A3",
+   "re": "(?!)"
+  },
+  {
    "id": "ai",
    "name": "智能设计",
    "color": "#7B2D5B",
@@ -113,7 +119,9 @@
    "name": "Optica Open",
    "group": "预印本",
    "prefix": "10.1364",
-   "preprint": true
+   "preprint": true,
+   "fallback": "gen",
+   "abbr": "Optica Open"
   },
   {
    "id": "rsquare",
@@ -121,7 +129,8 @@
    "group": "预印本",
    "prefix": "10.21203",
    "preprint": true,
-   "trend": false
+   "trend": false,
+   "abbr": "Research Square"
   },
   {
    "id": "nature",
@@ -142,14 +151,16 @@
    "name": "Science Advances",
    "group": "综合",
    "issn": "2375-2548",
-   "top": true
+   "top": true,
+   "abbr": "Sci. Adv."
   },
   {
    "id": "ncomms",
    "name": "Nature Communications",
    "group": "综合",
    "issn": "2041-1723",
-   "top": true
+   "top": true,
+   "abbr": "Nat. Commun."
   },
   {
    "id": "pnas",
@@ -161,27 +172,40 @@
    "id": "nsr",
    "name": "National Science Review",
    "group": "综合",
-   "issn": "2095-5138"
+   "issn": "2095-5138",
+   "abbr": "Natl Sci. Rev."
   },
   {
    "id": "scibull",
    "name": "Science Bulletin",
    "group": "综合",
-   "issn": "2095-9273"
+   "issn": "2095-9273",
+   "abbr": "Sci. Bull."
+  },
+  {
+   "id": "scirobot",
+   "name": "Science Robotics",
+   "group": "综合",
+   "issn": "2470-9476",
+   "top": true,
+   "abbr": "Sci. Robot."
   },
   {
    "id": "nphoton",
    "name": "Nature Photonics",
    "group": "Nature 子刊",
    "issn": "1749-4885",
-   "top": true
+   "top": true,
+   "fallback": "gen",
+   "abbr": "Nat. Photon."
   },
   {
    "id": "nnano",
    "name": "Nature Nanotechnology",
    "group": "Nature 子刊",
    "issn": "1748-3387",
-   "top": true
+   "top": true,
+   "abbr": "Nat. Nanotechnol."
   },
   {
    "id": "nphys",
@@ -189,21 +213,24 @@
    "group": "Nature 子刊",
    "issn": "1745-2473",
    "top": true,
-   "physics": true
+   "physics": true,
+   "abbr": "Nat. Phys."
   },
   {
    "id": "nmat",
    "name": "Nature Materials",
    "group": "Nature 子刊",
    "issn": "1476-1122",
-   "top": true
+   "top": true,
+   "abbr": "Nat. Mater."
   },
   {
    "id": "natelec",
    "name": "Nature Electronics",
    "group": "Nature 子刊",
    "issn": "2520-1131",
-   "top": true
+   "top": true,
+   "abbr": "Nat. Electron."
   },
   {
    "id": "natrevphys",
@@ -211,149 +238,245 @@
    "group": "Nature 子刊",
    "issn": "2522-5820",
    "top": true,
-   "physics": true
+   "physics": true,
+   "abbr": "Nat. Rev. Phys."
   },
   {
    "id": "natrevmat",
    "name": "Nature Reviews Materials",
    "group": "Nature 子刊",
    "issn": "2058-8437",
-   "top": true
+   "top": true,
+   "abbr": "Nat. Rev. Mater."
   },
   {
    "id": "commphys",
    "name": "Communications Physics",
    "group": "Nature 子刊",
    "issn": "2399-3650",
-   "physics": true
+   "physics": true,
+   "abbr": "Commun. Phys."
   },
   {
    "id": "npjnano",
    "name": "npj Nanophotonics",
    "group": "Nature 子刊",
-   "issn": "2948-216X"
+   "issn": "2948-216X",
+   "fallback": "gen",
+   "abbr": "npj Nanophoton."
+  },
+  {
+   "id": "nsensors",
+   "name": "Nature Sensors",
+   "group": "Nature 子刊",
+   "issn": "3059-4499",
+   "top": true,
+   "fallback": "sens",
+   "abbr": "Nat. Sensors"
+  },
+  {
+   "id": "nree",
+   "name": "Nature Reviews Electrical Engineering",
+   "group": "Nature 子刊",
+   "issn": "2948-1201",
+   "top": true,
+   "abbr": "Nat. Rev. Electr. Eng."
+  },
+  {
+   "id": "natcompsci",
+   "name": "Nature Computational Science",
+   "group": "Nature 子刊",
+   "issn": "2662-8457",
+   "top": true,
+   "abbr": "Nat. Comput. Sci."
+  },
+  {
+   "id": "natmi",
+   "name": "Nature Machine Intelligence",
+   "group": "Nature 子刊",
+   "issn": "2522-5839",
+   "top": true,
+   "abbr": "Nat. Mach. Intell."
+  },
+  {
+   "id": "natchem",
+   "name": "Nature Chemistry",
+   "group": "Nature 子刊",
+   "issn": "1755-4330",
+   "top": true,
+   "abbr": "Nat. Chem."
+  },
+  {
+   "id": "commmat",
+   "name": "Communications Materials",
+   "group": "Nature 子刊",
+   "issn": "2662-4443",
+   "abbr": "Commun. Mater."
+  },
+  {
+   "id": "commeng",
+   "name": "Communications Engineering",
+   "group": "Nature 子刊",
+   "issn": "2731-3395",
+   "abbr": "Commun. Eng."
   },
   {
    "id": "lsa",
    "name": "Light: Science & Applications",
    "group": "光学",
    "issn": "2047-7538",
-   "top": true
+   "top": true,
+   "fallback": "gen",
+   "abbr": "Light Sci. Appl."
   },
   {
    "id": "elight",
    "name": "eLight",
    "group": "光学",
    "issn": "2662-8643",
-   "top": true
+   "top": true,
+   "fallback": "gen"
   },
   {
    "id": "optica",
    "name": "Optica",
    "group": "光学",
-   "issn": "2334-2536"
+   "issn": "2334-2536",
+   "fallback": "gen"
   },
   {
    "id": "ap",
    "name": "Advanced Photonics",
    "group": "光学",
-   "issn": "2577-5421"
+   "issn": "2577-5421",
+   "fallback": "gen",
+   "abbr": "Adv. Photon."
   },
   {
    "id": "apn",
    "name": "Advanced Photonics Nexus",
    "group": "光学",
-   "issn": "2791-1519"
+   "issn": "2791-1519",
+   "fallback": "gen",
+   "abbr": "Adv. Photon. Nexus"
   },
   {
    "id": "lpr",
    "name": "Laser & Photonics Reviews",
    "group": "光学",
-   "issn": "1863-8880"
+   "issn": "1863-8880",
+   "fallback": "gen",
+   "abbr": "Laser Photon. Rev."
   },
   {
    "id": "acsphot",
    "name": "ACS Photonics",
    "group": "光学",
-   "issn": "2330-4022"
+   "issn": "2330-4022",
+   "fallback": "gen",
+   "abbr": "ACS Photon."
   },
   {
    "id": "nanoph",
    "name": "Nanophotonics",
    "group": "光学",
-   "issn": "2192-8614"
+   "issn": "2192-8614",
+   "fallback": "gen"
   },
   {
    "id": "prj",
    "name": "Photonics Research",
    "group": "光学",
-   "issn": "2327-9125"
+   "issn": "2327-9125",
+   "fallback": "gen",
+   "abbr": "Photon. Res."
   },
   {
    "id": "aplp",
    "name": "APL Photonics",
    "group": "光学",
-   "issn": "2378-0967"
+   "issn": "2378-0967",
+   "fallback": "gen",
+   "abbr": "APL Photon."
   },
   {
    "id": "adom",
    "name": "Advanced Optical Materials",
    "group": "光学",
-   "issn": "2195-1071"
+   "issn": "2195-1071",
+   "fallback": "gen",
+   "abbr": "Adv. Opt. Mater."
   },
   {
    "id": "adpr",
    "name": "Advanced Photonics Research",
    "group": "光学",
-   "issn": "2699-9293"
+   "issn": "2699-9293",
+   "fallback": "gen",
+   "abbr": "Adv. Photon. Res."
   },
   {
    "id": "acsaom",
    "name": "ACS Applied Optical Materials",
    "group": "光学",
-   "issn": "2771-9855"
+   "issn": "2771-9855",
+   "fallback": "gen",
+   "abbr": "ACS Appl. Opt. Mater."
   },
   {
    "id": "oea",
    "name": "Opto-Electronic Advances",
    "group": "光学",
-   "issn": "2096-4579"
+   "issn": "2096-4579",
+   "fallback": "gen",
+   "abbr": "Opto-Electron. Adv."
   },
   {
    "id": "oes",
    "name": "Opto-Electronic Science",
    "group": "光学",
-   "issn": "2097-0382"
+   "issn": "2097-0382",
+   "fallback": "gen",
+   "abbr": "Opto-Electron. Sci."
   },
   {
    "id": "photonix",
    "name": "PhotoniX",
    "group": "光学",
-   "issn": "2662-1991"
+   "issn": "2662-1991",
+   "fallback": "gen"
   },
   {
    "id": "oe",
    "name": "Optics Express",
    "group": "光学",
-   "issn": "1094-4087"
+   "issn": "1094-4087",
+   "fallback": "gen",
+   "abbr": "Opt. Express"
   },
   {
    "id": "ol",
    "name": "Optics Letters",
    "group": "光学",
-   "issn": "0146-9592"
+   "issn": "0146-9592",
+   "fallback": "gen",
+   "abbr": "Opt. Lett."
   },
   {
    "id": "col",
    "name": "Chinese Optics Letters",
    "group": "光学",
-   "issn": "1671-7694"
+   "issn": "1671-7694",
+   "fallback": "gen",
+   "abbr": "Chin. Opt. Lett."
   },
   {
    "id": "jopt",
    "name": "Journal of Optics",
    "group": "光学",
-   "issn": "2040-8978"
+   "issn": "2040-8978",
+   "fallback": "gen",
+   "abbr": "J. Opt."
   },
   {
    "id": "prl",
@@ -362,7 +485,8 @@
    "issn": "0031-9007",
    "aps": "PRL",
    "physics": true,
-   "top": true
+   "top": true,
+   "abbr": "PRL"
   },
   {
    "id": "prx",
@@ -370,7 +494,8 @@
    "group": "物理",
    "issn": "2160-3308",
    "aps": "PRX",
-   "physics": true
+   "physics": true,
+   "abbr": "PRX"
   },
   {
    "id": "rmp",
@@ -379,7 +504,8 @@
    "issn": "0034-6861",
    "top": true,
    "aps": "RMP",
-   "physics": true
+   "physics": true,
+   "abbr": "RMP"
   },
   {
    "id": "prapplied",
@@ -387,7 +513,8 @@
    "group": "物理",
    "issn": "2331-7019",
    "aps": "PRAPPLIED",
-   "physics": true
+   "physics": true,
+   "abbr": "PR Applied"
   },
   {
    "id": "prr",
@@ -395,7 +522,8 @@
    "group": "物理",
    "issn": "2643-1564",
    "aps": "PRRESEARCH",
-   "physics": true
+   "physics": true,
+   "abbr": "PR Research"
   },
   {
    "id": "pra",
@@ -403,7 +531,8 @@
    "group": "物理",
    "issn": "2469-9926",
    "aps": "PRA",
-   "physics": true
+   "physics": true,
+   "abbr": "PRA"
   },
   {
    "id": "prb",
@@ -411,42 +540,48 @@
    "group": "物理",
    "issn": "2469-9950",
    "aps": "PRB",
-   "physics": true
+   "physics": true,
+   "abbr": "PRB"
   },
   {
    "id": "apr",
    "name": "Applied Physics Reviews",
    "group": "物理",
    "issn": "1931-9401",
-   "physics": true
+   "physics": true,
+   "abbr": "Appl. Phys. Rev."
   },
   {
    "id": "apl",
    "name": "Applied Physics Letters",
    "group": "物理",
    "issn": "0003-6951",
-   "physics": true
+   "physics": true,
+   "abbr": "APL"
   },
   {
    "id": "scpma",
    "name": "Sci. China Phys. Mech. Astron.",
    "group": "物理",
    "issn": "1674-7348",
-   "physics": true
+   "physics": true,
+   "abbr": "Sci. China PMA"
   },
   {
    "id": "njp",
    "name": "New Journal of Physics",
    "group": "物理",
    "issn": "1367-2630",
-   "physics": true
+   "physics": true,
+   "abbr": "New J. Phys."
   },
   {
    "id": "rpp",
    "name": "Reports on Progress in Physics",
    "group": "物理",
    "issn": "0034-4885",
-   "physics": true
+   "physics": true,
+   "abbr": "Rep. Prog. Phys."
   },
   {
    "id": "prxq",
@@ -454,7 +589,8 @@
    "group": "物理",
    "issn": "2691-3399",
    "aps": "PRXQUANTUM",
-   "physics": true
+   "physics": true,
+   "abbr": "PRX Quantum"
   },
   {
    "id": "pre",
@@ -462,7 +598,8 @@
    "group": "物理",
    "issn": "2470-0045",
    "aps": "PRE",
-   "physics": true
+   "physics": true,
+   "abbr": "PRE"
   },
   {
    "id": "prm",
@@ -470,7 +607,8 @@
    "group": "物理",
    "issn": "2475-9953",
    "aps": "PRMATERIALS",
-   "physics": true
+   "physics": true,
+   "abbr": "PR Materials"
   },
   {
    "id": "epl",
@@ -484,59 +622,68 @@
    "name": "Chinese Physics Letters",
    "group": "物理",
    "issn": "0256-307X",
-   "physics": true
+   "physics": true,
+   "abbr": "Chin. Phys. Lett."
   },
   {
    "id": "cpb",
    "name": "Chinese Physics B",
    "group": "物理",
    "issn": "1674-1056",
-   "physics": true
+   "physics": true,
+   "abbr": "Chin. Phys. B"
   },
   {
    "id": "aps_wl",
    "name": "Acta Physica Sinica",
    "group": "物理",
    "issn": "1000-3290",
-   "physics": true
+   "physics": true,
+   "abbr": "物理学报"
   },
   {
    "id": "frontphys",
    "name": "Frontiers of Physics",
    "group": "物理",
    "issn": "2095-0462",
-   "physics": true
+   "physics": true,
+   "abbr": "Front. Phys."
   },
   {
    "id": "nanolett",
    "name": "Nano Letters",
    "group": "材料与纳米",
-   "issn": "1530-6984"
+   "issn": "1530-6984",
+   "abbr": "Nano Lett."
   },
   {
    "id": "acsnano",
    "name": "ACS Nano",
    "group": "材料与纳米",
-   "issn": "1936-0851"
+   "issn": "1936-0851",
+   "abbr": "ACS Nano"
   },
   {
    "id": "adma",
    "name": "Advanced Materials",
    "group": "材料与纳米",
    "issn": "0935-9648",
-   "top": true
+   "top": true,
+   "abbr": "Adv. Mater."
   },
   {
    "id": "advsci",
    "name": "Advanced Science",
    "group": "材料与纳米",
-   "issn": "2198-3844"
+   "issn": "2198-3844",
+   "abbr": "Adv. Sci."
   },
   {
    "id": "afm",
    "name": "Advanced Functional Materials",
    "group": "材料与纳米",
-   "issn": "1616-301X"
+   "issn": "1616-301X",
+   "abbr": "Adv. Funct. Mater."
   },
   {
    "id": "small",
@@ -548,7 +695,8 @@
    "id": "tap",
    "name": "IEEE Trans. Antennas Propag.",
    "group": "工程",
-   "issn": "0018-926X"
+   "issn": "0018-926X",
+   "abbr": "IEEE TAP"
   }
  ],
  "default_off": [
@@ -1171,5 +1319,6 @@
  "start_date": "2026-01-01",
  "history_skip": [
   "rsquare"
- ]
+ ],
+ "skip_title": "^(author correction|publisher correction|correction|erratum|retraction|editorial expression|daily briefing|briefing chat|nature podcast|podcast|books in brief|where i work|career column|research highlight|news & views forum)\\b|^(correction to|addendum)"
 }

@@ -108,7 +108,7 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
     </section>
 
     <section class="card c12">
-      <h2>来源、主题与关键词的流向</h2><p class="desc">左边是论文来源，中间是主题，右边是出现最多的 24 个具体关键词；带子越宽论文越多。点右侧关键词可以加入自由探索。</p>
+      <h2>来源、主题与关键词的流向</h2><p class="desc">左边是论文来源（Nature 系列、Science 系列、PRL/PRX、Advanced Materials 单列），中间是主题，右边是出现最多的 24 个具体关键词；带子越宽论文越多。点右侧关键词可以加入自由探索。</p>
       <div class="chart tall" id="cSankey"></div>
     </section>
 
@@ -118,7 +118,7 @@ h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;marg
       <div class="chart tall" id="cGraph"></div>
     </section>
     <section class="card c5">
-      <h2>期刊与方向</h2><p class="desc">论文最多的 16 个来源各自偏重哪些方向：每一行是一个来源，颜色越深表示该来源中这个方向的论文占比越高。点格子在列表页查看。</p>
+      <div class="head"><h2>期刊与方向</h2><div class="seg" id="segVenue"><button data-v="top">顶刊</button><button data-v="most">发文最多</button></div></div><p class="desc">每一行是一个期刊或平台，格子里是它的论文中这个方向的占比，颜色越深越高；期刊名后面是篇数。点格子在列表页查看。</p>
       <div class="chart tall" id="cVenue"></div>
     </section>
 
@@ -138,10 +138,14 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DAY = 864e5, NOW = Date.now();
 let CONFIG, DATA, TRENDS;
+const get = u => fetch(u, { cache:'no-cache' }).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); });
+// the long-range index is requested right away (in parallel) only if the saved range needs it
+const savedRange = (JSON.parse(localStorage.getItem('nanoradar.explore') || '{}').range) || '14';
+let histP = (savedRange === 'all' || +savedRange > 31) ? get('x/hist.json').catch(() => null) : null;
 try {
-  const get = u => fetch(u, { cache:'no-cache' }).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); });
-  [CONFIG, DATA, TRENDS] = await Promise.all([get('config.json'), get('data.json'), get('trends.json').catch(() => ({ days:{} }))]);
-  await loadScript(['https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js', 'https://unpkg.com/echarts@5.5.1/dist/echarts.min.js', 'https://fastly.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js']);
+  // chart library (self-hosted copy first; CDNs as fallback) and the compact index load in parallel
+  [CONFIG, DATA, TRENDS] = await Promise.all([get('config.json'), get('x/recent.json'), get('trends.json').catch(() => ({ days:{} })),
+    loadScript(['vendor/echarts.min.js', 'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js', 'https://unpkg.com/echarts@5.5.1/dist/echarts.min.js'])]);
 } catch (e) { $('#sub').innerHTML = `<span class="err">${esc(e.message)}，请刷新重试。</span>`; return; }
 
 const TOPICS = CONFIG.topics; const TMAP = Object.fromEntries(TOPICS.map(t => [t.id, t]));
@@ -154,34 +158,31 @@ const short = s => s.slice(5).replace('-', '/');
 
 // Charts use the keyword-rule topics for every paper, so counts stay comparable across days
 // (Claude's topic/relevance labels exist only for recent papers).
-const prep = p => {
-  p.tps = (p.ta || p.rt).filter(t => TMAP[t]);   // title-only topics where the archive had no abstract
-  p.day = dstr(p.ts);
-  p.kn = (p.kw || []).map(k => KMAP[k]?.name).filter(Boolean);
-  p._s = (p.title + ' ' + (p.abs || '') + ' ' + (p.zh || '') + ' ' + (p.ak || []).join(' ') + ' ' + p.kn.join(' ')).toLowerCase();
+// x/recent.json and x/hist.json are compact indexes built by scripts/update.py:
+// row = [source index, minutes since start, topic bitmask, [keyword numbers], title, key, zh?, claude keywords?]
+const SRC_IDS = DATA.sources; const T0 = DATA.t0;
+const keyUrl = k => k.startsWith('arxiv:') ? 'https://arxiv.org/abs/' + k.slice(6) : 'https://doi.org/' + k.slice(4);
+const prep = r => {
+  const p = { src:SRC_IDS[r[0]], ts:T0 + r[1] * 60000, tps:TOPICS.filter((t, i) => r[2] & (1 << i)).map(t => t.id), kw:r[3].map(n => 'k' + n), title:r[4], key:r[5], zh:r[6] || '', ak:r[7] || '' };
+  p.url = keyUrl(p.key); p.day = dstr(p.ts);
+  p._s = (p.title + ' ' + p.zh + ' ' + p.ak + ' ' + p.kw.map(k => KMAP[k]?.name || '').join(' ')).toLowerCase();
   return p;
 };
 const START_MS = new Date((DATA.start || CONFIG.start_date || '2026-01-01') + 'T00:00:00+08:00').getTime();
-const inTrend = p => SMAP[p.src]?.trend !== false && (p.ta || p.rt || []).length > 0;
-let papers = (DATA.papers || []).filter(inTrend).map(prep);
-const seenKeys = new Set(papers.map(p => p.key));
-const loadedMonths = new Set(); let archIndex = null;
+let papers = DATA.rows.map(prep);
+let histLoaded = false;
 async function ensureArchive(days){
-  if (days <= 31) return;
-  archIndex ||= await fetch('archive/index.json', { cache:'no-cache' }).then(r => r.json()).catch(() => ({ months:[] }));
-  const cutoff = NOW - days * DAY;
-  const want = archIndex.months.map(x => x.m).filter(m => !loadedMonths.has(m) && new Date(m + '-01T00:00:00+08:00').getTime() + 31 * DAY > cutoff);
-  if (!want.length) return;
-  $('#loadNote').textContent = `正在载入 ${want.length} 个月的历史论文…`;
-  const res = await Promise.all(want.map(m => fetch(`archive/${m}.json`).then(r => r.json()).catch(() => null)));
-  res.forEach((d, i) => { if (!d) return; loadedMonths.add(want[i]); for (const p of d.papers || []) if (inTrend(p) && !seenKeys.has(p.key)) { seenKeys.add(p.key); papers.push(prep(p)); } });
+  if (days <= 31 || histLoaded) return;
+  $('#loadNote').textContent = '正在载入 1 月以来的历史论文…';
+  const h = await (histP || get('x/hist.json').catch(() => null));
+  if (h) { const seen = new Set(papers.map(p => p.key)); for (const r of h.rows) if (!seen.has(r[5])) papers.push(prep(r)); histLoaded = true; }
   $('#loadNote').textContent = '';
 }
-const prefs = Object.assign({ range:'14', src:'all', smooth:'7' }, JSON.parse(localStorage.getItem('nanoradar.explore') || '{}'));
+const prefs = Object.assign({ range:'14', src:'all', smooth:'7', venue:'top' }, JSON.parse(localStorage.getItem('nanoradar.explore') || '{}'));
 let terms = JSON.parse(localStorage.getItem('nanoradar.terms') || 'null');
 const persist = () => { try { localStorage.setItem('nanoradar.explore', JSON.stringify(prefs)); localStorage.setItem('nanoradar.terms', JSON.stringify(terms)); } catch {} };
 
-const setSub = () => $('#sub').textContent = `当前载入 ${papers.length} 篇相关论文（${CONFIG.sources.filter(s => s.preprint).length} 个预印本平台与 ${CONFIG.sources.filter(s => !s.preprint).length} 种期刊，${loadedMonths.size ? '含 2026 年 1 月以来的历史数据' : '近 31 天'}），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}。`;
+const setSub = () => $('#sub').textContent = `当前载入 ${papers.length} 篇相关论文（${CONFIG.sources.filter(s => s.preprint).length} 个预印本平台与 ${CONFIG.sources.filter(s => !s.preprint).length} 种期刊，${histLoaded ? '含 2026 年 1 月以来的历史数据' : '近 31 天'}），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}。`;
 setSub();
 
 const charts = {};
@@ -312,7 +313,13 @@ function renderSankey(){
   const pool = papers.filter(p => srcOk(p) && inRange(p, n));
   const top = Object.entries(kwCounts(pool)).sort((a, b) => b[1] - a[1]).slice(0, 24).map(x => x[0]);
   const topSet = new Set(top);
-  const srcName = p => SMAP[p.src]?.preprint ? '预印本' : SMAP[p.src]?.top ? '顶刊' : '其他期刊';
+  const srcName = p => { const s = SMAP[p.src] || {};
+    if (s.preprint) return '预印本';
+    if (p.src === 'nature' || s.group === 'Nature 子刊' && s.top || p.src === 'ncomms') return 'Nature 系列';
+    if (['science', 'sciadv', 'scirobot'].includes(p.src)) return 'Science 系列';
+    if (['prl', 'prx', 'rmp'].includes(p.src)) return 'PRL / PRX';
+    if (p.src === 'adma') return 'Advanced Materials';
+    return '其他期刊'; };
   const L = {}; const add = (a, b, w) => { const k = a + '\u0001' + b; L[k] = (L[k] || 0) + w; };
   for (const p of pool) {
     const tps = p.tps.length ? p.tps : [];
@@ -322,7 +329,7 @@ function renderSankey(){
   }
   const nodes = new Map();
   const nodeOf = (name, color) => { if (!nodes.has(name)) nodes.set(name, { name, itemStyle:{ color } }); };
-  ['预印本','顶刊','其他期刊'].forEach((s, i) => nodeOf(s, ['#9B2C2C','#1F3550','#6E8AA8'][i]));
+  ['预印本','Nature 系列','Science 系列','PRL / PRX','Advanced Materials','其他期刊'].forEach((s, i) => nodeOf(s, ['#9B2C2C','#1F3550','#B5341E','#3C6E9E','#2E8B6A','#8A96A3'][i]));
   TOPICS.forEach(t => nodeOf(t.name, t.color));
   top.forEach(k => nodeOf(KMAP[k].name, TMAP[KMAP[k].topic]?.color || '#888'));
   const links = Object.entries(L).filter(([, v]) => v >= 0.5).map(([k, v]) => { const [s, t] = k.split('\u0001'); return { source:s, target:t, value:+v.toFixed(1) }; });
@@ -375,11 +382,12 @@ function renderVenue(){
   const n = rangeDays();
   const pool = papers.filter(p => srcOk(p) && inRange(p, n));
   const bySrc = {}; for (const p of pool) (bySrc[p.src] ||= []).push(p);
-  const srcs = Object.entries(bySrc).sort((a, b) => b[1].length - a[1].length).slice(0, 16).map(x => x[0]).reverse();
+  const ranked = Object.entries(bySrc).filter(([s]) => prefs.venue !== 'top' || SMAP[s]?.top).sort((a, b) => b[1].length - a[1].length);
+  const srcs = ranked.slice(0, 16).map(x => x[0]).reverse();
   const tps = TOPICS.filter(t => t.id !== 'ai');
   const data = [];
   srcs.forEach((s, y) => { const ps = bySrc[s]; tps.forEach((t, x) => { const c = ps.filter(p => p.tps.includes(t.id)).length; data.push([x, y, +(100 * c / ps.length).toFixed(1), c, ps.length]); }); });
-  const name = s => SMAP[s]?.name || s;
+  const name = s => `${SMAP[s]?.abbr || SMAP[s]?.name || s}  ${bySrc[s].length}`;
   const narrow = chart('cVenue').getWidth() < 520;
   chart('cVenue').setOption({
     textStyle: baseText,
@@ -429,8 +437,8 @@ function renderHeat(){
 }
 
 /* ---------- controls ---------- */
-function syncSeg(){ for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth']]) for (const b of document.querySelectorAll(id + ' button')) b.setAttribute('aria-pressed', String(String(prefs[key]) === b.dataset.v)); }
-for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth']])
+function syncSeg(){ for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth'],['#segVenue','venue']]) for (const b of document.querySelectorAll(id + ' button')) b.setAttribute('aria-pressed', String(String(prefs[key]) === b.dataset.v)); }
+for (const [id, key] of [['#segRange','range'],['#segSrc','src'],['#segSmooth','smooth'],['#segVenue','venue']])
   $(id).addEventListener('click', async e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = b.dataset.v; selDay = null; persist(); syncSeg(); await ensureArchive(rangeDays()); renderAll(); });
 function renderAll(){
   syncSeg(); setSub();
@@ -438,7 +446,9 @@ function renderAll(){
   renderTopics();
   const rise = renderRise();
   if (!terms) terms = rise.slice(-3).reverse().map(r => KMAP[r.k].name);
-  renderExplore(); renderSankey(); renderGraph(); renderVenue(); renderHeat();
+  renderExplore(); renderVenue(); renderHeat();
+  // the two heaviest charts are drawn after the first paint
+  setTimeout(() => { renderSankey(); renderGraph(); }, 30);
 }
 await ensureArchive(rangeDays());
 renderAll();

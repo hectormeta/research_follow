@@ -1,0 +1,11 @@
+{
+ "date": "2026-11-02",
+ "items": [
+  {"text": "Nature Communications：Jianfei Li 等在全无源 THz 超表面中靠几何旋转让奇异点与 BIC 线合并，实验实现 EP-BIC。", "key": "doi:10.1038/s41467-026-78664-w"},
+  {"text": "eLight：Qiwen Zhan 等提出时空拓扑梳，在高维时空拓扑态里编码数据，用于稳健的大容量传输。", "key": "doi:10.1186/s43593-026-00145-w"},
+  {"text": "LSA：Peijun Guo 等用 2D 钙钛矿反射率的温度系数做成全光像素化长波红外成像阵列，不需要读出电路。", "key": "doi:10.1038/s41377-026-02442-y"},
+  {"text": "近 7 天升温：多层超表面（6 篇，此前每周不到 1 篇）、非厄米趋肤效应和衍射神经网络都明显增多。", "q": "multilayer metasurface"},
+  {"text": "片上光学持续活跃：氮化硅相关论文近 7 天 18 篇，高于此前每周约 12 篇的水平。", "q": "silicon nitride"},
+  {"text": "值得关注：Research Square 上一篇在审稿件报告在石墨烯中观测到圆偏振强光诱导的 Haldane 拓扑能隙。", "key": "doi:10.21203/rs.3.rs-11148426"}
+ ]
+}
