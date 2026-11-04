@@ -1,29 +1,29 @@
 {
- "date": "2026-11-03",
+ "date": "2026-11-04",
  "items": [
   {
-   "text": "Nat. Commun.：Xing Yi Ling等以d轨道调控缓解多重SERS竞争吸附。",
-   "key": "doi:10.1038/s41467-026-79205-1"
+   "text": "Adv. Mater.：Yongsheng Chen等的柔性NIR光电二极管响应480 ns。",
+   "key": "doi:10.1002/adma.75605"
   },
   {
-   "text": "Nat. Mater.：Jesús Zúñiga-Pérez等以亮暗激子驱动极化激元自旋流。",
-   "key": "doi:10.1038/s41563-026-02782-5"
+   "text": "APL Phot.：Maximilien Billet等的200 mm硅光晶圆TFLN转印良率>95%。",
+   "key": "doi:10.1063/5.0345939"
   },
   {
-   "text": "Nanophotonics：Yaping Dan等的四通带红外滤波器，峰值透过率约80%。",
-   "key": "doi:10.1002/nap2.70345"
+   "text": "ACS Nano：Joon Hak Oh等以DJ钙钛矿促进晶格手性转移和CPL探测。",
+   "key": "doi:10.1021/acsnano.6c14930"
   },
   {
-   "text": "arXiv预印本：单像素定量相位成像仅用重建像素数2.55%的强度测量。",
-   "key": "arxiv:2611.01675"
+   "text": "arXiv预印本：<8 nm MoS₂层可调50 nm金膜热反射系数的符号和大小。",
+   "key": "arxiv:2611.02024"
   },
   {
-   "text": "本库近7天多层超表面5篇，此前三周周均0.7篇。",
-   "q": "multilayer metasurface"
+   "text": "本库近7天EP相关论文12篇，此前三周周均9.0篇。",
+   "q": "exceptional point"
   },
   {
-   "text": "本库近7天光镊16篇，此前三周周均9.7篇。",
-   "q": "optical tweezers"
+   "text": "本库近7天量子发射体13篇，此前三周周均9.3篇。",
+   "q": "quantum emitter"
   }
  ]
 }
