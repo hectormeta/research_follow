@@ -1,29 +1,29 @@
 {
- "date": "2026-11-04",
+ "date": "2026-11-05",
  "items": [
   {
-   "text": "Adv. Mater.：Yongsheng Chen等的柔性NIR光电二极管响应480 ns。",
-   "key": "doi:10.1002/adma.75605"
+   "text": "Nat. Photon.：Yunan Gao等的纯蓝QLED兼具高亮度与较小效率滚降。",
+   "key": "doi:10.1038/s41566-026-02041-8"
   },
   {
-   "text": "APL Phot.：Maximilien Billet等的200 mm硅光晶圆TFLN转印良率>95%。",
-   "key": "doi:10.1063/5.0345939"
+   "text": "Sci. Adv.：Armando Perez-Leija等数值模拟经典非线性波诱导量子光热化。",
+   "key": "doi:10.1126/sciadv.aeg6518"
   },
   {
-   "text": "ACS Nano：Joon Hak Oh等以DJ钙钛矿促进晶格手性转移和CPL探测。",
-   "key": "doi:10.1021/acsnano.6c14930"
+   "text": "Adv. Mater.：Zhengjun Zhang等在633 nm实现λ/5焦斑FWHM。",
+   "key": "doi:10.1002/adma.75622"
   },
   {
-   "text": "arXiv预印本：<8 nm MoS₂层可调50 nm金膜热反射系数的符号和大小。",
-   "key": "arxiv:2611.02024"
+   "text": "arXiv预印本（理论）：双层原子Huygens表面近无反射透射，并实现2π相位控制。",
+   "key": "arxiv:2611.04538"
   },
   {
-   "text": "本库近7天EP相关论文12篇，此前三周周均9.0篇。",
-   "q": "exceptional point"
+   "text": "本库近7天单光子源关键词12条，前三周周均7.0条。",
+   "q": "single-photon source"
   },
   {
-   "text": "本库近7天量子发射体13篇，此前三周周均9.3篇。",
-   "q": "quantum emitter"
+   "text": "本库近7天量子点关键词26条，前三周周均21.3条。",
+   "q": "quantum dot"
   }
  ]
 }
