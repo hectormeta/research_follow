@@ -61,6 +61,19 @@ def check_time():
         raise OutOfTime()
 
 
+def runner_label():
+    """Where this update was run from, recorded in data.json for the status line."""
+    lab = os.environ.get('NR_RUNNER_LABEL', '').strip()
+    if lab:
+        return lab
+    if os.environ.get('GITHUB_ACTIONS', '').lower() == 'true':
+        return 'GitHub Actions'
+    if os.environ.get('IS_FAAS_ENV') == 'True' or os.environ.get('IS_FAAS_SANDBOX_POD') == 'True':
+        return '云端定时任务'
+    import socket
+    return socket.gethostname()
+
+
 def keywords(text):
     return [i for i, rx in KW_RE if rx.search(text)]
 
@@ -868,7 +881,7 @@ def main():
         print(f'{sid:10s} {v["n"]:4d} {v["err"] or ""}', flush=True)
     jsave(ROOT / 'authors.json', authors)
 
-    data = {'generated': NOW_MS, 'start': START, 'sources': meta, 'papers': papers}
+    data = {'generated': NOW_MS, 'start': START, 'runner': runner_label(), 'sources': meta, 'papers': papers}
     jsave(prev_path, data)
     # archive: replace this window's entries month by month
     win_ms = NOW_MS - WINDOW * DAY_MS

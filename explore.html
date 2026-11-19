@@ -182,7 +182,7 @@ const prefs = Object.assign({ range:'14', src:'all', smooth:'7', venue:'top' }, 
 let terms = JSON.parse(localStorage.getItem('nanoradar.terms') || 'null');
 const persist = () => { try { localStorage.setItem('nanoradar.explore', JSON.stringify(prefs)); localStorage.setItem('nanoradar.terms', JSON.stringify(terms)); } catch {} };
 
-const setSub = () => $('#sub').textContent = `当前载入 ${papers.length} 篇相关论文（${CONFIG.sources.filter(s => s.preprint).length} 个预印本平台与 ${CONFIG.sources.filter(s => !s.preprint).length} 种期刊，${histLoaded ? '含 2026 年 1 月以来的历史数据' : '近 31 天'}），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}。`;
+const setSub = () => $('#sub').textContent = `当前载入 ${papers.length} 篇相关论文（${CONFIG.sources.filter(s => s.preprint).length} 个预印本平台与 ${CONFIG.sources.filter(s => !s.preprint).length} 种期刊，${histLoaded ? '含 2026 年 1 月以来的历史数据' : '近 31 天'}），数据更新于 ${new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}${DATA.runner ? `，运行于 ${DATA.runner}` : ''}。`;
 setSub();
 
 const charts = {};
