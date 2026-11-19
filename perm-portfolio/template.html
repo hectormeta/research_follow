@@ -916,7 +916,7 @@ $('csvBtn').addEventListener('click',function(){
   aEl.download='永久组合-'+A.dates[a]+'-'+A.dates[b]+'.csv';
   aEl.click();
 });
-$('syncText').textContent='数据更新至 '+DATA.dates[DATA.dates.length-1]+' 收盘 · 每交易日 18:50 自动重建';
+$('syncText').textContent='数据更新至 '+DATA.dates[DATA.dates.length-1]+' 收盘 · 每交易日收盘后自动重建';
 $('syncDot').className='dot snap';
 })();
 </script>
