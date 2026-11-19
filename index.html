@@ -509,7 +509,7 @@ document.addEventListener('click', e => {
   if (t.matches('.kchip')) { prefs.q = t.dataset.q; $('#q').value = prefs.q; limit = 60; persist(); render(); window.scrollTo({ top: $('#controls').offsetTop, behavior:'smooth' }); return; }
   if (t.matches('.thumb')) { const box = $('#lightbox'); const im = box.querySelector('img'); im.referrerPolicy = 'no-referrer'; im.src = t.dataset.img; box.classList.add('open'); return; }
   if (t.closest('#segDays')) { prefs.days = +t.dataset.v; if (prefs.status === 'star') prefs.status = 'all'; limit = 60; persist(); ensureArchive().then(render); render(); return; }
-  if (t.id === 'topBtn') { prefs.topOnly = !prefs.topOnly; limit = 60; persist(); render(); return; }
+  if (t.id === 'topBtn') { prefs.topOnly = !prefs.topOnly; if (prefs.topOnly && prefs.view === 'arxiv') prefs.view = 'all'; limit = 60; persist(); render(); return; }
   if (t.closest('#segStatus')) { prefs.status = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.closest('#segSort')) { prefs.sort = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.closest('#segView')) { prefs.view = t.dataset.v; if (t.dataset.v === 'arxiv') prefs.topOnly = false; limit = 60; persist(); render(); return; }
