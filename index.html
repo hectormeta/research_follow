@@ -317,7 +317,7 @@ function view(){
   const off = new Set(prefs.off);
   const base = [...papers.values()];
   for (const [k, snap] of Object.entries(state.star)) if (!papers.has(k) && snap && typeof snap === 'object') base.push(Object.assign({ rt:[], abs:'', _s:'' }, snap, { key:k }));
-  const inScope0 = base.filter(p => !off.has(p.src) && (!prefs.topOnly || SMAP[p.src]?.top) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
+  const inScope0 = base.filter(p => !off.has(p.src) && (prefs.view === 'arxiv' || !prefs.topOnly || SMAP[p.src]?.top) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
   const inScope = inScope0.filter(p => prefs.view === 'arxiv' ? p.src === 'arxiv' : prefs.view === 'journal' ? !SMAP[p.src]?.preprint : true);
   const rel = inScope.filter(p => isRelevant(p) || state.star[p.key]);
   const hidden = inScope.length - rel.length;
@@ -512,7 +512,7 @@ document.addEventListener('click', e => {
   if (t.id === 'topBtn') { prefs.topOnly = !prefs.topOnly; limit = 60; persist(); render(); return; }
   if (t.closest('#segStatus')) { prefs.status = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.closest('#segSort')) { prefs.sort = t.dataset.v; limit = 60; persist(); render(); return; }
-  if (t.closest('#segView')) { prefs.view = t.dataset.v; limit = 60; persist(); render(); return; }
+  if (t.closest('#segView')) { prefs.view = t.dataset.v; if (t.dataset.v === 'arxiv') prefs.topOnly = false; limit = 60; persist(); render(); return; }
   if (t.id === 'srcBtn') { const p = $('#srcpanel'); p.classList.toggle('open'); t.setAttribute('aria-expanded', String(p.classList.contains('open'))); renderSources(); return; }
   if (t.dataset.sa) {
     if (t.dataset.sa === 'all') prefs.off = [];
