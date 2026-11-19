@@ -94,6 +94,11 @@ header > div:first-child{flex:1 1 520px;min-width:0}
 .cc{font-size:12.5px;color:var(--ink3)}
 .loading{color:var(--ink3);font-size:13px;margin-left:6px}
 .src.ax{font-family:var(--sans);font-style:normal;font-size:12.5px;color:#9B2C2C;background:#fff;box-shadow:inset 0 0 0 1px #E2B4B4}
+.vtier{display:inline-block;font-family:var(--sans);font-style:normal;font-size:12px;border-radius:4px;padding:0 7px;line-height:1.5;color:var(--ink2);background:#EEF1F4}
+.vtier.t1{background:var(--navy);color:#fff;box-shadow:inset 0 -2px 0 #E2B34A}
+.vtier.t2{background:#E3EAF1;color:var(--navy)}
+.vtier.t3{background:#F1F3F5;color:var(--ink2)}
+.vtier.t4{background:#F6F7F8;color:var(--ink3)}
 .item .t{font-family:var(--serif);font-weight:600;font-size:18px;line-height:1.32;margin:0}
 .item .t a{text-decoration:none}
 .item .t a:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
@@ -171,6 +176,9 @@ header > div:first-child{flex:1 1 520px;min-width:0}
     <div class="seg" id="segSort" aria-label="排序">
       <button data-v="new">最新</button><button data-v="pick">精选</button>
     </div>
+    <div class="seg" id="segView" aria-label="浏览范围">
+      <button data-v="all">全部</button><button data-v="journal">期刊</button><button data-v="arxiv">arXiv 预印本</button>
+    </div>
     <button class="btn toggle" id="topBtn" aria-pressed="false">只看顶刊</button>
     <input class="search" id="q" type="search" placeholder="搜索标题、中文要点、作者、关键词">
     <button class="btn" id="srcBtn" aria-expanded="false">来源</button>
@@ -233,7 +241,8 @@ async function ensureArchive(){
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const state = load(LS.state, { star:{}, read:{} });
-const prefs = Object.assign({ days:7, status:'all', sort:'new', topics:[], off:null, known:null, q:'', showHidden:false }, load(LS.prefs, {}));
+const prefs = Object.assign({ days:7, status:'all', sort:'new', view:'all', topics:[], off:null, known:null, q:'', showHidden:false }, load(LS.prefs, {}));
+if (!['all','journal','arxiv'].includes(prefs.view)) prefs.view = 'all';
 // default-off sources; sources added later are switched off only if they are on the default-off list
 const defOff = CONFIG.default_off || [];
 if (!Array.isArray(prefs.off)) prefs.off = [...defOff];
@@ -308,17 +317,19 @@ function view(){
   const off = new Set(prefs.off);
   const base = [...papers.values()];
   for (const [k, snap] of Object.entries(state.star)) if (!papers.has(k) && snap && typeof snap === 'object') base.push(Object.assign({ rt:[], abs:'', _s:'' }, snap, { key:k }));
-  const inScope = base.filter(p => !off.has(p.src) && (!prefs.topOnly || SMAP[p.src]?.top) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
+  const inScope0 = base.filter(p => !off.has(p.src) && (!prefs.topOnly || SMAP[p.src]?.top) && (prefs.status === 'star' ? !!state.star[p.key] : p.ts >= cutoff));
+  const inScope = inScope0.filter(p => prefs.view === 'arxiv' ? p.src === 'arxiv' : prefs.view === 'journal' ? !SMAP[p.src]?.preprint : true);
   const rel = inScope.filter(p => isRelevant(p) || state.star[p.key]);
   const hidden = inScope.length - rel.length;
-  let pool = prefs.showHidden ? inScope : rel;
+  let pool = (prefs.showHidden || prefs.view === 'arxiv') ? inScope : rel;
   if (prefs.status === 'unread') pool = pool.filter(p => !state.read[p.key]);
   if (q) { const terms = q.split(/\s+/).filter(Boolean); pool = pool.filter(p => terms.every(t => (p._s || '').includes(t))); }
   const topicCounts = Object.fromEntries(TOPICS.map(t => [t.id, 0]));
   for (const p of pool) for (const t of new Set(topicsOf(p))) if (topicCounts[t] !== undefined) topicCounts[t]++;
   const sel = prefs.topics;
   const shown = sel.length ? pool.filter(p => topicsOf(p).some(t => sel.includes(t))) : pool;
-  if (prefs.sort === 'pick') shown.sort((a,b) => pickScore(b) - pickScore(a) || b.ts - a.ts);
+  if (prefs.view === 'arxiv') shown.sort((a,b) => (a.vt || 4) - (b.vt || 4) || b.ts - a.ts);
+  else if (prefs.sort === 'pick') shown.sort((a,b) => pickScore(b) - pickScore(a) || b.ts - a.ts);
   else shown.sort((a,b) => b.ts - a.ts);
   return { pool, shown, hidden, topicCounts };
 }
@@ -401,6 +412,7 @@ function itemHTML(p){
   const read = !!state.read[p.key], star = !!state.star[p.key];
   const stripes = (tps.length ? tps : [null]).map(t => `<span style="background:${t ? TMAP[t].color : '#C3CBD1'}"></span>`).join('');
   const src = p.src === 'arxiv' ? `<span class="src ax">arXiv${p.sub ? ' ' + esc(p.sub) : ''}</span>` : `<span class="src${SMAP[p.src]?.top ? ' top1' : ''}">${esc(p.journal)}</span>`;
+  const tier = p.src === 'arxiv' && p.vn ? `<span class="vtier t${p.vt}" title="按标题与摘要规则预估的期刊档次，仅供参考，不等于录用结果">预估·${esc(p.vn)}</span>` : '';
   const links = [`<a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${p.src==='arxiv'?'arXiv 页面':'期刊页面'}</a>`];
   if (p.pdf) links.push(`<a href="${esc(p.pdf)}" target="_blank" rel="noopener" data-open="1">PDF</a>`);
   if (p.oa) links.push(`<a href="${esc(p.oa)}" target="_blank" rel="noopener" data-open="1">开放获取 PDF</a>`);
@@ -410,7 +422,7 @@ function itemHTML(p){
   return `<article class="item${read?' read':''}" id="i-${esc(p.key)}" data-k="${esc(p.key)}">
     <div class="lines" aria-hidden="true">${stripes}</div>
     <div class="body">
-      <div class="top">${src}<time>${fmtDate(p.ts)}</time>${p.cc ? `<span class="cc" title="OpenAlex 统计的被引次数">被引 ${p.cc}</span>` : ''}</div>
+      <div class="top">${src}${tier}<time>${fmtDate(p.ts)}</time>${p.cc ? `<span class="cc" title="OpenAlex 统计的被引次数">被引 ${p.cc}</span>` : ''}</div>
       <h3 class="t"><a href="${esc(p.url)}" target="_blank" rel="noopener" data-open="1">${esc(p.title)}</a></h3>
       ${p.zh ? `<p class="zh">${esc(p.zh)}</p>` : ''}
       <p class="au">${authorsHTML(p)}</p>
@@ -434,12 +446,12 @@ function render(){
   renderSpectrum(v); renderLegend(v);
   if ($('#srcpanel').classList.contains('open')) renderSources();
   $('#topBtn').setAttribute('aria-pressed', String(!!prefs.topOnly));
-  for (const [id, key] of [['#segDays','days'],['#segStatus','status'],['#segSort','sort']])
+  for (const [id, key] of [['#segDays','days'],['#segStatus','status'],['#segSort','sort'],['#segView','view']])
     for (const b of document.querySelectorAll(id + ' button')) b.setAttribute('aria-pressed', String(String(prefs[key]) === b.dataset.v));
   const unread = v.pool.filter(p => !state.read[p.key]).length;
   const label = prefs.days === 1 ? '今天' : prefs.days >= 9999 ? `${new Date(START_MS).getFullYear()} 年 ${new Date(START_MS).getMonth() + 1} 月 ${new Date(START_MS).getDate()} 日以来` : `过去 ${prefs.days} 天`;
   $('#sub').innerHTML = prefs.status === 'star' ? `收藏夹里有 <b>${v.pool.length}</b> 篇论文` : `${label}有 <b>${v.pool.length}</b> 篇相关论文，其中 <b>${unread}</b> 篇未读`;
-  $('#count').textContent = `显示 ${Math.min(limit, v.shown.length)} / ${v.shown.length} 篇` + (v.hidden && !prefs.showHidden ? `，另有 ${v.hidden} 篇判定为无关已隐藏` : '');
+  $('#count').textContent = `显示 ${Math.min(limit, v.shown.length)} / ${v.shown.length} 篇` + (v.hidden && !prefs.showHidden && prefs.view !== 'arxiv' ? `，另有 ${v.hidden} 篇判定为无关已隐藏` : '');
   updateStatus();
   const list = $('#list');
   if (!v.shown.length) {
@@ -448,7 +460,7 @@ function render(){
   }
   const page = v.shown.slice(0, limit);
   let html = '';
-  if (prefs.sort === 'new') {
+  if (prefs.sort === 'new' && prefs.view !== 'arxiv') {
     const per = {};
     for (const p of v.shown) per[dayKey(p.ts)] = (per[dayKey(p.ts)] || 0) + 1;
     let last = 0;
@@ -458,7 +470,9 @@ function render(){
       html += itemHTML(p);
     }
   } else {
-    html = `<h2 class="day"><span>精选</span><small>按相关度、期刊与时间排序</small></h2>` + page.map(itemHTML).join('');
+    const heading = prefs.view === 'arxiv' ? '按预估期刊档次' : '精选';
+    const sub = prefs.view === 'arxiv' ? '档次越高越靠前，同级按时间' : '按相关度、期刊与时间排序';
+    html = `<h2 class="day"><span>${heading}</span><small>${sub}</small></h2>` + page.map(itemHTML).join('');
   }
   if (v.shown.length > limit) html += `<button class="btn more" id="moreBtn">再显示 ${Math.min(60, v.shown.length - limit)} 篇</button>`;
   list.innerHTML = html;
@@ -498,6 +512,7 @@ document.addEventListener('click', e => {
   if (t.id === 'topBtn') { prefs.topOnly = !prefs.topOnly; limit = 60; persist(); render(); return; }
   if (t.closest('#segStatus')) { prefs.status = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.closest('#segSort')) { prefs.sort = t.dataset.v; limit = 60; persist(); render(); return; }
+  if (t.closest('#segView')) { prefs.view = t.dataset.v; limit = 60; persist(); render(); return; }
   if (t.id === 'srcBtn') { const p = $('#srcpanel'); p.classList.toggle('open'); t.setAttribute('aria-expanded', String(p.classList.contains('open'))); renderSources(); return; }
   if (t.dataset.sa) {
     if (t.dataset.sa === 'all') prefs.off = [];

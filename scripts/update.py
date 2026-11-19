@@ -87,6 +87,40 @@ def rule_topics(text, physics=False):
     return prim
 
 
+# --- expected venue tier for arXiv preprints (rule-based; a rough estimate, not a prediction of acceptance) ---
+STRONG_VENUE_RE = re.compile(
+    r"first (demonstration|realization|observation|experimental)|record (high|low|highest|lowest|efficiency|quality factor|q-?factor|responsivity|bandwidth|threshold|sensitivity)"
+    r"|ultra-?high|breakthrough|unprecedented|new paradigm|single[- ]photon|entangled|quantum emission|quantum light"
+    r"|bose[- ]einstein|invisibility|cloak|giant enhancement|all-optical switching|low[- ]threshold (nanolaser|laser)"
+    r"|topological laser|high[- ]quality factor", re.I)
+MED_VENUE_RE = re.compile(
+    r"high[- ]performance|efficient|broadband|tunable|reconfigurable|metasurface|metamaterial|waveguide|photonic chip"
+    r"|integrated photonic|sensitive|sensing|resonator|polariton|plasmonic|machine learning|deep learning"
+    r"|nanolaser|flat lens|holographic", re.I)
+HOT_VENUE_TOPICS = {'topo', 'quant', 'meta'}
+VENUE_TIERS = {1: '顶刊潜力', 2: '主流专业期刊', 3: '一般专业期刊', 4: '待观察'}
+
+
+def venue_tier(text, topics, rel):
+    """Return (tier 1-4, tier label) for an arXiv preprint, based on relevance, hot topics and impact-signal words."""
+    score = 2 if rel == 2 else 1 if rel == 1 else 0
+    if STRONG_VENUE_RE.search(text):
+        score += 2
+    if set(topics) & HOT_VENUE_TOPICS:
+        score += 1
+    if MED_VENUE_RE.search(text):
+        score += 1
+    if rel == 0:
+        return 4, VENUE_TIERS[4]
+    if score >= 5:
+        return 1, VENUE_TIERS[1]
+    if score == 4:
+        return 2, VENUE_TIERS[2]
+    if score >= 2:
+        return 3, VENUE_TIERS[3]
+    return 4, VENUE_TIERS[4]
+
+
 def get(url, timeout=60, data=None, headers=None, tries=5, want_url=False):
     err = None
     for i in range(tries):
@@ -497,7 +531,7 @@ def apply_summaries(path):
     print(f'applied {len(got)} summaries, {n} matched papers in data.json')
 
 
-SLIM = ('key', 'src', 'sub', 'title', 'ts', 'url', 'pdf', 'oa', 'au', 'na', 'img', 'rt', 'ta', 'tk', 'kw', 'zh', 'tp', 'rel', 'ak', 'cc')
+SLIM = ('key', 'src', 'sub', 'title', 'ts', 'url', 'pdf', 'oa', 'au', 'na', 'img', 'rt', 'ta', 'tk', 'kw', 'zh', 'tp', 'rel', 'ak', 'cc', 'vt', 'vn')
 
 
 def publish(p, authors, thumbs, cache, slim=False):
@@ -554,6 +588,11 @@ def publish(p, authors, thumbs, cache, slim=False):
         q.update({'zh': s['zh'], 'tp': s['tp'], 'rel': s['rel']})
         if s.get('kw'):
             q['ak'] = s['kw']
+    if p['src'] == 'arxiv':
+        topics = q.get('tp') or q.get('rt') or []
+        text = (p.get('title', '') + ' ' + (p.get('abs') or ''))
+        vt, vn = venue_tier(text, topics, q.get('rel', 1) or 0)
+        q['vt'], q['vn'] = vt, vn
     if slim:
         q = {f: q[f] for f in SLIM if f in q}
     return q
