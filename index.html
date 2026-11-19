@@ -76,6 +76,17 @@ header > div:first-child{flex:1 1 520px;min-width:0}
 .srcpanel .foot2{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 
 /* list */
+.layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:24px;align-items:start}
+.side{position:sticky;top:64px;max-height:calc(100vh - 88px);overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+.side h3{font-family:var(--serif);font-size:14px;margin:2px 0 4px;color:var(--ink)}
+.side .sub{font-size:12px;color:var(--ink3);margin:0 0 10px}
+.side-item{display:block;width:100%;text-align:left;border:0;background:none;border-bottom:1px solid #EDF1F3;padding:8px 2px;cursor:pointer;border-radius:6px}
+.side-item:hover{background:var(--paper)}
+.side-item .au{font-size:13px;font-weight:600;color:var(--ink);line-height:1.35}
+.side-item .au sup{font-size:10px;color:#9B2C2C;margin-left:1px}
+.side-item .meta{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px;font-size:12px;color:var(--ink3)}
+.side-item .ven{font-style:italic;font-family:var(--serif);color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:960px){.layout{grid-template-columns:1fr}.side{display:none}}
 .listhead{display:flex;justify-content:space-between;align-items:baseline;color:var(--ink3);font-size:13px;margin:10px 0 4px;gap:10px;flex-wrap:wrap}
 .listhead button{border:0;background:none;color:var(--focus);cursor:pointer;padding:0;font-size:13px}
 .day{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--serif);font-size:16px;color:var(--ink);margin:26px 0 2px;padding-bottom:6px;border-bottom:1.5px solid var(--ink)}
@@ -186,7 +197,10 @@ header > div:first-child{flex:1 1 520px;min-width:0}
   <div class="srcpanel" id="srcpanel"></div>
 
   <div class="listhead"><span><span id="count"></span><span class="loading" id="loadNote"></span></span><span><button id="markAll">把当前列表标为已读</button></span></div>
-  <main id="list"></main>
+  <div class="layout">
+    <aside class="side" id="side" aria-label="最近发文通讯作者"></aside>
+    <main id="list"></main>
+  </div>
   <footer class="foot">
     <p>覆盖超表面、超材料、拓扑光学、光场调控、微纳光学、传感、光计算、二维材料、片上光学、计算成像、非线性与量子光子学，以及物理期刊里的 BIC、奇异点、非厄米等波动物理工作。收录 2026 年 1 月 1 日以来的论文，每天自动更新。</p>
     <p>数据来源：预印本来自 <a href="https://info.arxiv.org/help/api/index.html">arXiv API</a>、<a href="https://www.researchsquare.com/">Research Square</a>（含 Nature 系列在审稿件）、<a href="https://opticaopen.org/">Optica Open</a> 和 <a href="https://chemrxiv.org/">ChemRxiv</a>；期刊论文元数据来自 <a href="https://www.crossref.org/">Crossref</a>；通讯作者、被引次数、开放获取 PDF 和缺失的摘要来自 <a href="https://openalex.org/">OpenAlex</a>；缩略图直接链接到 arXiv、Springer Nature 和 APS 网站上的原图。</p>
@@ -284,6 +298,14 @@ function authorsHTML(p){
   return parts.join(', ').replace(/, <span class="gap">…<\/span>,/g, ' <span class="gap">…</span>') + (gap ? ` <span class="na">共 ${na} 人</span>` : '');
 }
 const authorText = p => (p.au ? p.au.map(x => x[0]).join(' ') : (p.authors || []).join(' '));
+const shortVenue = p => p.src === 'arxiv' ? 'arXiv' : (SMAP[p.src]?.abbr || p.journal || p.src);
+function corrAuthor(p){
+  const au = p.au;
+  if (!au || !au.length) { const t = authorText(p); return { name: t || '—', guess: !t }; }
+  const c = au.find(x => x[1] === 1) || au.find(x => x[1] === 2);
+  if (c) return { name: c[0], guess: c[1] === 2 };
+  return { name: au[au.length - 1][0], guess: true };
+}
 
 /* ---------- data store ---------- */
 const papers = new Map();
@@ -440,10 +462,23 @@ function itemHTML(p){
   </article>`;
 }
 
+function renderSide(v){
+  const side = $('#side'); if (!side) return;
+  const recent = [...v.pool].sort((a,b) => b.ts - a.ts).slice(0, 40);
+  if (!recent.length) { side.innerHTML = '<h3>最近发文</h3><p class="sub">当前筛选下暂无论文</p>'; return; }
+  side.innerHTML = '<h3>最近发文 · 通讯作者</h3><p class="sub">按时间最近，点击定位 · * 为末位推定通讯</p>' + recent.map(p => {
+    const c = corrAuthor(p);
+    return `<button class="side-item" data-k="${esc(p.key)}">
+      <div class="au">${esc(c.name)}${c.guess ? '<sup>*</sup>' : ''}</div>
+      <div class="meta"><span class="ven">${esc(shortVenue(p))}</span><span>${fmtDate(p.ts)}</span></div>
+    </button>`;
+  }).join('');
+}
+
 const openAbs = new Set();
 function render(){
   const v = view();
-  renderSpectrum(v); renderLegend(v);
+  renderSpectrum(v); renderLegend(v); renderSide(v);
   if ($('#srcpanel').classList.contains('open')) renderSources();
   $('#topBtn').setAttribute('aria-pressed', String(!!prefs.topOnly));
   for (const [id, key] of [['#segDays','days'],['#segStatus','status'],['#segSort','sort'],['#segView','view']])
@@ -508,6 +543,8 @@ document.addEventListener('click', e => {
   }
   if (t.matches('.kchip')) { prefs.q = t.dataset.q; $('#q').value = prefs.q; limit = 60; persist(); render(); window.scrollTo({ top: $('#controls').offsetTop, behavior:'smooth' }); return; }
   if (t.matches('.thumb')) { const box = $('#lightbox'); const im = box.querySelector('img'); im.referrerPolicy = 'no-referrer'; im.src = t.dataset.img; box.classList.add('open'); return; }
+  const si = t.closest('.side-item');
+  if (si) { const el = document.getElementById('i-' + si.dataset.k); if (el) { el.scrollIntoView({ behavior:'smooth', block:'center' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } return; }
   if (t.closest('#segDays')) { prefs.days = +t.dataset.v; if (prefs.status === 'star') prefs.status = 'all'; limit = 60; persist(); ensureArchive().then(render); render(); return; }
   if (t.id === 'topBtn') { prefs.topOnly = !prefs.topOnly; if (prefs.topOnly && prefs.view === 'arxiv') prefs.view = 'all'; limit = 60; persist(); render(); return; }
   if (t.closest('#segStatus')) { prefs.status = t.dataset.v; limit = 60; persist(); render(); return; }
