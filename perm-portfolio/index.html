@@ -206,6 +206,13 @@ select:focus,input:focus{border-color:var(--green)}
     </section>
   </div>
 
+  <!-- ===== 回撤档案 ===== -->
+  <section class="card">
+    <div class="cardhd"><h2>回撤档案 <small>全历史 · 幅度最大的 6 次，含修复用时</small></h2></div>
+    <div class="tblwrap" id="ddTbl"></div>
+    <div class="hintline" id="ddTblNote"></div>
+  </section>
+
   <!-- ===== 年度收益 ===== -->
   <section class="card">
     <div class="cardhd"><h2>年度收益 <small>按年，红正绿负</small></h2></div>
@@ -285,7 +292,7 @@ var PRESETS = [
 ];
 
 var state = {raw:[10,10,24,18,12,12,14], freq:'Q', capital:100000, range:'all', log:false,
-             vis:{'510300':true,'510880':false,'513100':true,'513500':true,'511010':false,'518880':true,'511880':false}};
+             vis:{pf:true,'510300':true,'510880':false,'513100':true,'513500':true,'511010':false,'518880':true,'511880':false}};
 
 /* ================= 工具 ================= */
 function $(id){return document.getElementById(id);}
@@ -383,6 +390,25 @@ function maxDDAt(vals){ /* 当前回撤 */
   var peak=vals[0], i;
   for(i=0;i<vals.length;i++) if(vals[i]>peak) peak=vals[i];
   return 1-vals[vals.length-1]/peak;
+}
+
+/* 识别回撤区间：{peakIdx,troughIdx,recoverIdx(未修复为 null),depth}
+   阈值 thresh（默认 3%），只有跌幅超过阈值才记一次 */
+function ddEpisodes(vals,thresh){
+  thresh = (thresh===undefined)? 0.03 : thresh;
+  var eps=[], peak=vals[0], peakIdx=0, low=vals[0], lowIdx=0, inEp=false, i;
+  for(i=1;i<vals.length;i++){
+    if(vals[i]>=peak){
+      if(inEp){ eps.push({peakIdx:peakIdx,troughIdx:lowIdx,recoverIdx:i,depth:1-low/peak}); inEp=false; }
+      if(vals[i]>peak){ peak=vals[i]; peakIdx=i; }
+      low=vals[i]; lowIdx=i;
+    } else {
+      if(vals[i]<low){ low=vals[i]; lowIdx=i; }
+      if(!inEp && (1-vals[i]/peak)>=thresh) inEp=true;
+    }
+  }
+  if(inEp) eps.push({peakIdx:peakIdx,troughIdx:lowIdx,recoverIdx:null,depth:1-low/peak});
+  return {eps:eps, peak:peak, peakIdx:peakIdx, low:low, lowIdx:lowIdx, inEp:inEp};
 }
 
 /* ================= 状态推导 ================= */
@@ -509,6 +535,15 @@ function drawLines(host,opt){
   });
   svg.appendChild(g);
 
+  /* 回撤阴影：下跌阶段淡红、修复阶段淡绿 */
+  if(opt.bands){
+    opt.bands.forEach(function(b){
+      if(b.e<=b.s) return;
+      svg.insertBefore(svgEl('rect',{x:X(b.s),y:P.t,width:Math.max(1,X(b.e)-X(b.s)),
+        height:H-P.t-P.b,fill:b.fill}), g);
+    });
+  }
+
   /* 区域 + 线 */
   function pathFor(sv){
     var dpath=[], i2, started=false, stride2=Math.max(1,Math.floor(n/2200));
@@ -546,6 +581,16 @@ function drawLines(host,opt){
   }
   series.forEach(function(sv){ if(!sv.halo) stroke(sv); });
   series.forEach(function(sv){ if(sv.halo) stroke(sv); });
+
+  /* 组合线末端标注累计涨幅 */
+  if(main && !isOff(main) && opt.endLabel){
+    var ly=Y(main.vals[n-1]), lx=X(n-1);
+    var lb=svgEl('text',{x:Math.min(lx+6,W-P.r-4),y:Math.max(P.t+12,ly-8),'text-anchor':lx>W-160?'end':'start',
+      'font-size':W<560?10.5:12,'font-weight':700,fill:PORT_COLOR,
+      stroke:'#FFFDF6','stroke-width':3.2,style:'paint-order:stroke'});
+    lb.textContent=opt.endLabel;
+    svg.appendChild(lb);
+  }
 
   /* 交互层 */
   var ov=svgEl('rect',{x:P.l,y:P.t,width:W-P.l-P.r,height:H-P.t-P.b,fill:'transparent',style:'cursor:crosshair'});
@@ -596,7 +641,7 @@ function drawLines(host,opt){
   ov.addEventListener('touchend',hide);
 }
 
-function drawDD(host,dates,vals){
+function drawDD(host,dates,vals,bands){
   var W = Math.max(300, host.clientWidth||400);
   var H = W<560? 150 : 200;
   var P={l: W<560?38:46,r:10,t:12,b: W<560?20:24};
@@ -616,6 +661,11 @@ function drawDD(host,dates,vals){
     tx.textContent=(Math.abs(t)<1e-9?'0':(t*100).toFixed(0))+'%';
     svg.appendChild(tx);
   }
+  if(bands) bands.forEach(function(b){
+    if(b.e<=b.s) return;
+    svg.appendChild(svgEl('rect',{x:X(b.s),y:P.t,width:Math.max(1,X(b.e)-X(b.s)),
+      height:H-P.t-P.b,fill:b.fill}));
+  });
   var path=[], i2, st=Math.max(1,Math.floor(n/1600));
   for(i2=0;i2<n;i2+=st) path.push((i2?'L':'M')+X(i2).toFixed(2)+' '+Y(dd[i2]).toFixed(2));
   path.push('L'+X(n-1).toFixed(2)+' '+Y(dd[n-1]).toFixed(2));
@@ -732,20 +782,42 @@ function render(){
   }
   $('dailyRow').innerHTML=chips;
 
+  /* --- 回撤：全历史区间 + 当前区间阴影 --- */
+  var epAll=ddEpisodes(sim.vals,0.03);
+  var bands=[];
+  epAll.eps.forEach(function(e){
+    if(e.depth<0.05) return;
+    var r0=e.peakIdx, r1=(e.recoverIdx===null? A.dates.length-1 : e.recoverIdx);
+    if(r1<a || r0>b) return;
+    var s0=Math.max(r0,a), t=Math.min(Math.max(e.troughIdx,a),b), s1=Math.min(r1,b);
+    if(t>s0) bands.push({s:s0-a,e:t-a,fill:'rgba(190,58,46,.075)'});
+    if(s1>t) bands.push({s:t-a,e:s1-a,fill:'rgba(43,122,91,.065)'});
+  });
   /* --- 曲线 --- */
-  var series=[{name:'组合',key:'pf',color:PORT_COLOR,vals:pv,width:2.6,fill:true,halo:true,on:true}];
+  var series=[{name:'组合',key:'pf',color:PORT_COLOR,vals:pv,width:3.2,fill:true,halo:true,on:state.vis.pf!==false}];
   SYMS.forEach(function(s,j){
     series.push({name:META[s].name,key:s,color:META[s].color,vals:pxR[j],width:1.5,fill:false,on:state.vis[s]});
   });
-  drawLines($('lineHost'),{dates:dates,series:series,log:state.log,rightPct:true,
+  drawLines($('lineHost'),{dates:dates,series:series,log:state.log,rightPct:true,bands:bands,endLabel:'组合 '+pct(perfR.total,1),
     yFmt:function(v){return v.toFixed(0);},valFmt:function(v){return v.toFixed(1);}});
   $('lineSub').textContent='左轴净值（起点 100）· 右轴较起点增长比率'+(state.log?' · 对数':'')+' · 区间 '+dates[0].slice(0,4)+' 起';
 
-  /* --- 回撤 --- */
-  drawDD($('ddHost'),dates,pv);
+  drawDD($('ddHost'),dates,pv,bands);
   var curDD=maxDDAt(pv);
-  $('ddNote').innerHTML='最大回撤 <b>'+pctPlain(perfR.mdd,1)+'</b>（'+(dates[perfR.peakAt]||'')+' → '+(dates[perfR.troughAt]||'')+'），'
-    +'当前距区间高点 <b>'+pctPlain(curDD,1)+'</b>。同期沪深300最大回撤 <b>'+pctPlain(perf(A.px[0].slice(a,b+1),dates).mdd,1)+'</b>。';
+  var worstInR=null;
+  epAll.eps.forEach(function(e){
+    if(e.recoverIdx!==null && (e.recoverIdx<a || e.peakIdx>b)) return;
+    if(e.peakIdx> b) return;
+    if(!worstInR || e.depth>worstInR.depth) worstInR=e;
+  });
+  var fixTxt='—';
+  if(worstInR){
+    if(worstInR.recoverIdx===null) fixTxt='尚未修复，已 '+daysBetween(A.dates[worstInR.peakIdx],A.dates[A.dates.length-1])+' 天';
+    else fixTxt='修复于 '+A.dates[worstInR.recoverIdx]+'，用时 '+daysBetween(A.dates[worstInR.troughIdx],A.dates[worstInR.recoverIdx])+' 天';
+  }
+  $('ddNote').innerHTML='本区间最深回撤 <b>'+pctPlain(perfR.mdd,1)+'</b>（'+(dates[perfR.peakAt]||'')+' → '+(dates[perfR.troughAt]||'')+'，'+fixTxt+'）；'
+    +'回落用了 <b>'+daysBetween(dates[perfR.peakAt],dates[perfR.troughAt])+'</b> 天。当前距区间高点 <b>'+pctPlain(curDD,1)+'</b>。'
+    +'<br>同期沪深300最大回撤 <b>'+pctPlain(perf(A.px[0].slice(a,b+1),dates).mdd,1)+'</b>，阴影：<span style="color:#BE3A2E">■</span> 回落段 <span style="color:#2B7A5B">■</span> 修复段。';
 
   /* --- 配置 --- */
   var pname='自定义';
@@ -812,6 +884,35 @@ function render(){
     +Math.round(perf(A.px[0].slice(a,b+1),dates).vol/perfR.vol*10)/10+' 分之一；最大回撤 '
     +pctPlain(perfR.mdd,1)+' vs '+pctPlain(perf(A.px[0].slice(a,b+1),dates).mdd,1)+'。收益靠四腿轮动接力，而非单压股票。<span style="color:#9A9487">（窄屏可左右滑动表格）</span>';
 
+  /* --- 回撤档案 --- */
+  var eps6=epAll.eps.slice().sort(function(x,y){return y.depth-x.depth;}).slice(0,6)
+                     .sort(function(x,y){return x.peakIdx-y.peakIdx;});
+  var dtb='<tr><th>峰值日</th><th>谷底日</th><th>修复日</th><th>回撤</th><th>回落</th><th>修复</th><th>合计</th><th>状态</th></tr>';
+  eps6.forEach(function(e){
+    var pk=A.dates[e.peakIdx], tr=A.dates[e.troughIdx];
+    var rc=e.recoverIdx===null? null : A.dates[e.recoverIdx];
+    var d1=daysBetween(pk,tr), d2=rc? daysBetween(tr,rc) : daysBetween(tr,A.dates[A.dates.length-1]);
+    var band=Math.min(1,Math.abs(e.depth)/0.4);
+    dtb+='<tr><td class="year">'+pk+'</td><td>'+tr+'</td><td>'+(rc||'<span style="color:#BE3A2E">未修复</span>')+'</td>'
+      +'<td><span class="hm" style="background:rgba(190,58,46,'+(0.10+band*0.22)+');color:#A9352B">'+pctPlain(e.depth,1)+'</span></td>'
+      +'<td>'+d1+' 天</td><td>'+d2+' 天</td><td>'+(d1+d2)+' 天</td>'
+      +'<td>'+(rc?'<span style="color:#2B7A5B">已修复</span>':'<span style="color:#BE3A2E">修复中</span>')+'</td></tr>';
+  });
+  $('ddTbl').innerHTML='<table class="heat">'+dtb+'</table>';
+  var fixedEps=epAll.eps.filter(function(e){return e.recoverIdx!==null;});
+  var avgFix=0, maxFix=0, maxFixEp=null;
+  fixedEps.forEach(function(e){
+    var d=daysBetween(A.dates[e.troughIdx],A.dates[e.recoverIdx]);
+    avgFix+=d; if(d>maxFix){maxFix=d; maxFixEp=e;}
+  });
+  if(fixedEps.length) avgFix/=fixedEps.length;
+  var nowDD = epAll.inEp? (1-sim.vals[sim.vals.length-1]/epAll.peak) : 0;
+  var nowDays = epAll.inEp? daysBetween(A.dates[epAll.peakIdx],A.dates[A.dates.length-1]) : 0;
+  $('ddTblNote').innerHTML='全历史共 <b>'+epAll.eps.length+'</b> 次回撤超过 3%；已修复的平均用时 <b>'+Math.round(avgFix)+'</b> 天，'
+    +'最长 <b>'+maxFix+'</b> 天'+(maxFixEp?('（'+A.dates[maxFixEp.peakIdx]+' 高点，跌 '+pctPlain(maxFixEp.depth,1)+'）'):'')+'。'
+    +'当前'+(epAll.inEp?('处于回撤中：距 '+A.dates[epAll.peakIdx]+' 高点 <b>'+pctPlain(nowDD,1)+'</b>，已持续 <b>'+nowDays+'</b> 天'):'处于历史高点附近，回撤 <b>0.0%</b>')+'。'
+    +'<br>合计天数 = 从峰值回落 + 回到前高（净值口径，按自然日）；曲线阴影：<span style="color:#BE3A2E">■</span> 回落段、<span style="color:#2B7A5B">■</span> 修复段。';
+
   /* 参数提示 */
   $('paramNote').innerHTML='目标权重：'+SYMS.map(function(s,j){return META[s].name+' '+pctPlain(target[j],0);}).join('　·　')
     +'。滑块会按比例自动归一化到 100%；改变权重、频率或本金都会立即重算整段历史。';
@@ -869,14 +970,18 @@ function buildTabs(){
   });
 }
 function buildLegend(){
-  $('legend').innerHTML=SYMS.map(function(s){
+  var pfBtn='<button class="lg'+(state.vis.pf!==false?'':' off')+'" data-s="pf" style="font-weight:700">'
+    +'<i style="background:'+PORT_COLOR+';height:5px;border-radius:3px"></i>组合</button>';
+  $('legend').innerHTML=pfBtn+SYMS.map(function(s){
     return '<button class="lg'+(state.vis[s]?'':' off')+'" data-s="'+s+'"><i style="background:'+META[s].color+'"></i>'+META[s].name+'</button>';
   }).join('');
   Array.prototype.forEach.call($('legend').children,function(b){
     b.addEventListener('click',function(){
-      var s=b.getAttribute('data-s');
-      state.vis[s]=!state.vis[s];
-      if(!SYMS.some(function(k){return state.vis[k];}) && Object.keys(state.vis).length) state.vis[s]=true;
+      var k=b.getAttribute('data-s');
+      if(k==='pf') state.vis.pf=(state.vis.pf===false);
+      else { state.vis[k]=!state.vis[k];
+        var any=SYMS.some(function(q){return state.vis[q];});
+        if(!any) state.vis[k]=true; }
       buildLegend(); render();
     });
   });
