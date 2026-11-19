@@ -46,6 +46,7 @@ jobs:
 
       - name: Build portfolio
         if: github.event_name != 'push'
+        continue-on-error: true          # 抓数失败就保留上一版页面，不影响论文站发布
         run: python3 perm-portfolio/build.py
 
       - name: Commit data
