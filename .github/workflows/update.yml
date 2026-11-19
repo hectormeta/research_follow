@@ -57,7 +57,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p _site
-          cp -r index.html explore.html config.json data.json trends.json digest.json archive x vendor .nojekyll _site/ 2>/dev/null || cp -r index.html explore.html config.json data.json trends.json archive x vendor .nojekyll _site/
+          cp -r index.html explore.html perm-portfolio config.json data.json trends.json digest.json archive x vendor .nojekyll _site/ 2>/dev/null || cp -r index.html explore.html perm-portfolio config.json data.json trends.json archive x vendor .nojekyll _site/
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
