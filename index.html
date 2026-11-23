@@ -214,7 +214,7 @@ header > div:first-child{flex:1 1 520px;min-width:0}
 'use strict';
 const NOW = Date.now();
 const DAY = 864e5;
-const LS = { state:'nanoradar.v1.state', prefs:'nanoradar.v1.prefs' };
+const LS = { state:'nanoradar.v1.state', prefs:'nanoradar.v1.prefs', scroll:'nanoradar.v1.scroll' };
 
 let CONFIG = { sources:[], topics:[], context:'x', keywords:[] }, DATA = {};
 try {
@@ -631,7 +631,36 @@ addPapers(DATA.papers || []);
 for (const k of Object.keys(state.star)) if (papers.has(k)) state.star[k] = snapshot(papers.get(k));
 persist();
 render();
+const restoredY = load(LS.scroll, 0);
+if (restoredY) { localStorage.removeItem(LS.scroll); requestAnimationFrame(() => window.scrollTo(0, restoredY)); }
 ensureArchive().then(render);
+
+/* ---------- auto refresh: poll a tiny version file once a day; reload only when idle ---------- */
+(function autoRefresh(){
+  const CHECK_MS = 24*3600*1000;   // 站点一天一更，每天检查一次版本即可
+  const IDLE_MS = 60*1000;         // 静置 1 分钟、且没有展开的摘要时才重载
+  const cur = DATA.generated || 0;
+  let lastActive = Date.now();
+  let pending = false;
+  const mark = () => { lastActive = Date.now(); };
+  ['mousemove','mousedown','keydown','wheel','scroll','touchstart'].forEach(ev =>
+    document.addEventListener(ev, mark, { passive:true }));
+  const idle = () => openAbs.size === 0 && Date.now() - lastActive >= IDLE_MS;
+  function reload(){ try { save(LS.scroll, window.scrollY); } catch {} location.reload(); }
+  function maybeReload(){
+    if (!pending) return;
+    if (idle()) { reload(); return; }
+    setTimeout(maybeReload, 30*1000);
+  }
+  async function check(){
+    try {
+      const v = await fetch('x/version.json', { cache:'no-cache' }).then(r => r.ok ? r.json() : null);
+      if (v && v.generated && v.generated > cur) pending = true;
+    } catch {}
+    if (pending) maybeReload(); else setTimeout(check, CHECK_MS);
+  }
+  setTimeout(check, CHECK_MS);
+})();
 })();
 </script>
 </body>

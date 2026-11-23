@@ -452,6 +452,35 @@ function renderAll(){
 }
 await ensureArchive(rangeDays());
 renderAll();
+const restoredY = +(localStorage.getItem('nanoradar.explore.scroll') || 0);
+if (restoredY) { localStorage.removeItem('nanoradar.explore.scroll'); requestAnimationFrame(() => window.scrollTo(0, restoredY)); }
+
+/* ---------- auto refresh: poll a tiny version file once a day; reload only when idle ---------- */
+(function autoRefresh(){
+  const CHECK_MS = 24*3600*1000;   // 站点一天一更，每天检查一次版本即可
+  const IDLE_MS = 60*1000;         // 静置 1 分钟后再重载
+  const cur = DATA.generated || 0;
+  let lastActive = Date.now();
+  let pending = false;
+  const mark = () => { lastActive = Date.now(); };
+  ['mousemove','mousedown','keydown','wheel','scroll','touchstart'].forEach(ev =>
+    document.addEventListener(ev, mark, { passive:true }));
+  const idle = () => Date.now() - lastActive >= IDLE_MS;
+  function reload(){ try { localStorage.setItem('nanoradar.explore.scroll', String(window.scrollY)); } catch {} location.reload(); }
+  function maybeReload(){
+    if (!pending) return;
+    if (idle()) { reload(); return; }
+    setTimeout(maybeReload, 30*1000);
+  }
+  async function check(){
+    try {
+      const v = await fetch('x/version.json', { cache:'no-cache' }).then(r => r.ok ? r.json() : null);
+      if (v && v.generated && v.generated > cur) pending = true;
+    } catch {}
+    if (pending) maybeReload(); else setTimeout(check, CHECK_MS);
+  }
+  setTimeout(check, CHECK_MS);
+})();
 })();
 </script>
 </body>

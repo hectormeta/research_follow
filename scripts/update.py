@@ -932,6 +932,7 @@ def main():
     write_archive(by_m, replace_after=win_ms)
     build_trends()
     build_explore()
+    jsave(ROOT / 'x' / 'version.json', {'generated': NOW_MS, 'n': len(papers), 'runner': data['runner']})
     if args.todo:
         Path(args.todo).write_text(json.dumps(todo, ensure_ascii=False, indent=0), encoding='utf-8')
     print('papers', len(papers), 'with summary', sum(1 for q in papers if 'zh' in q), 'todo', len(todo),
