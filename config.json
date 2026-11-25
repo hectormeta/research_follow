@@ -1320,5 +1320,227 @@
  "history_skip": [
   "rsquare"
  ],
- "skip_title": "^(author correction|publisher correction|correction|erratum|retraction|editorial expression|daily briefing|briefing chat|nature podcast|podcast|books in brief|where i work|career column|research highlight|news & views forum)\\b|^(correction to|addendum)"
+ "skip_title": "^(author correction|publisher correction|correction|erratum|retraction|editorial expression|daily briefing|briefing chat|nature podcast|podcast|books in brief|where i work|career column|research highlight|news & views forum)\\b|^(correction to|addendum)",
+ "news": {
+  "window_days": 14,
+  "max_per_cat": 40,
+  "cats": [
+   {
+    "id": "ai",
+    "name": "AI 信息",
+    "color": "#1F3550"
+   },
+   {
+    "id": "innovation",
+    "name": "科创新闻 / 机会",
+    "color": "#2F6BD8"
+   },
+   {
+    "id": "ai4s",
+    "name": "AI4S 资讯",
+    "color": "#13926A"
+   },
+   {
+    "id": "sz_policy",
+    "name": "深圳创业政策",
+    "color": "#C08A00"
+   },
+   {
+    "id": "academy",
+    "name": "学术政策与基金机会",
+    "color": "#D0402F"
+   }
+  ],
+  "feeds": [
+   {
+    "id": "openai",
+    "name": "OpenAI Blog",
+    "cat": "ai",
+    "type": "rss",
+    "url": "https://openai.com/news/rss.xml"
+   },
+   {
+    "id": "deepmind",
+    "name": "Google DeepMind Blog",
+    "cat": "ai4s",
+    "type": "rss",
+    "url": "https://deepmind.google/blog/rss.xml",
+    "reclass": {
+     "ai4s": "protein|materials?|chemistr|physics|climate|fusion|genome|molecule|drug|medicine|biology|science|research|model organism",
+     "ai": ".*"
+    }
+   },
+   {
+    "id": "mittr",
+    "name": "MIT Technology Review · AI",
+    "cat": "ai",
+    "type": "rss",
+    "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+   },
+   {
+    "id": "qbitai",
+    "name": "量子位",
+    "cat": "ai",
+    "type": "rss",
+    "url": "https://www.qbitai.com/feed"
+   },
+   {
+    "id": "sspai",
+    "name": "少数派",
+    "cat": "innovation",
+    "type": "rss",
+    "url": "https://sspai.com/feed",
+    "re": "AI|人工智能|大模型|算力|机器人|开发者|创业|开源"
+   },
+   {
+    "id": "gn_ai_en",
+    "name": "Google News · AI (EN)",
+    "cat": "ai",
+    "type": "gnews",
+    "hl": "en-US",
+    "gl": "US",
+    "ceid": "US:en",
+    "q": "artificial intelligence",
+    "when": "7d"
+   },
+   {
+    "id": "gn_ai_zh",
+    "name": "Google News · 人工智能",
+    "cat": "ai",
+    "type": "gnews",
+    "hl": "zh-CN",
+    "gl": "CN",
+    "ceid": "CN:zh-Hans",
+    "q": "人工智能",
+    "when": "7d"
+   },
+   {
+    "id": "gn_inv_en",
+    "name": "Google News · AI 融资 (EN)",
+    "cat": "innovation",
+    "type": "gnews",
+    "hl": "en-US",
+    "gl": "US",
+    "ceid": "US:en",
+    "q": "AI startup funding raises acquisition",
+    "when": "7d"
+   },
+   {
+    "id": "gn_inv_zh",
+    "name": "Google News · 科技融资 创业",
+    "cat": "innovation",
+    "type": "gnews",
+    "hl": "zh-CN",
+    "gl": "CN",
+    "ceid": "CN:zh-Hans",
+    "q": "人工智能 融资 创业 科技公司",
+    "when": "7d"
+   },
+   {
+    "id": "gn_sci_en",
+    "name": "Google News · AI for Science",
+    "cat": "ai4s",
+    "type": "gnews",
+    "hl": "en-US",
+    "gl": "US",
+    "ceid": "US:en",
+    "q": "AI for science machine learning protein materials discovery",
+    "when": "7d"
+   },
+   {
+    "id": "gn_sci_zh",
+    "name": "Google News · AI 科研",
+    "cat": "ai4s",
+    "type": "gnews",
+    "hl": "zh-CN",
+    "gl": "CN",
+    "ceid": "CN:zh-Hans",
+    "q": "人工智能 科研 蛋白质 材料 药物 模型",
+    "when": "7d"
+   },
+   {
+    "id": "gn_sz",
+    "name": "Google News · 深圳创业政策",
+    "cat": "sz_policy",
+    "type": "gnews",
+    "hl": "zh-CN",
+    "gl": "CN",
+    "ceid": "CN:zh-Hans",
+    "q": "\"深圳\" 创业 补贴 人才 政策 申报 扶持 博士后 高新",
+    "when": "30d"
+   },
+   {
+    "id": "gn_nsfc",
+    "name": "Google News · 基金项目申报",
+    "cat": "academy",
+    "type": "gnews",
+    "hl": "zh-CN",
+    "gl": "CN",
+    "ceid": "CN:zh-Hans",
+    "q": "国家自然科学基金 申报 资助 项目",
+    "when": "30d"
+   },
+   {
+    "id": "gn_postdoc",
+    "name": "Google News · 博士后/留学基金",
+    "cat": "academy",
+    "type": "gnews",
+    "hl": "zh-CN",
+    "gl": "CN",
+    "ceid": "CN:zh-Hans",
+    "q": "博士后 基金 资助 留学 人才计划",
+    "when": "30d"
+   },
+   {
+    "id": "gn_grant_en",
+    "name": "Google News · Research grants",
+    "cat": "academy",
+    "type": "gnews",
+    "hl": "en-US",
+    "gl": "US",
+    "ceid": "US:en",
+    "q": "research grant call fellowship funding",
+    "when": "30d"
+   },
+   {
+    "id": "arxiv_ai4s",
+    "name": "arXiv · AI for Science",
+    "cat": "ai4s",
+    "type": "arxiv",
+    "query": "(cat:q-bio.GN OR cat:q-bio.BM OR cat:physics.chem-ph OR cat:physics.bio-ph) AND (abs:\"neural network\" OR abs:\"machine learning\" OR abs:\"large language model\")"
+   },
+   {
+    "id": "sz_hrss",
+    "name": "深圳人社·通知公告",
+    "cat": "sz_policy",
+    "type": "html",
+    "url": "https://hrss.sz.gov.cn/tzgg/index.html",
+    "include": "补贴|资助|人才|博士后|创业|就业|培训|扶持|政策|申报|高层次|留学|入户|岗位|进站|求职|引才|创业担保",
+    "exclude": "工伤|送达公告|社会保险待遇|建筑劳务|工程公司|认定工伤|退回"
+   }
+  ],
+  "science_terms": "protein|materials?|chemistr|physics|climate|fusion|genome|molecule|drug|medicine|biology|cell|crystal|battery|catalyst|disease|patient|ecosystem|ocean|astronomy|particle|quantum",
+  "filters": {
+   "ai": {
+    "must": "\\bAI\\b|artificial intelligence|人工智能|大模型|LLM|large language model|neural network|machine learning|深度学习|智能体|\\bagent|机器人|芯片|算力|foundation model",
+    "exclude": "ETF|基金份额|重仓股|净值|行情|涨幅|收盘|招股|fund disclosure|earnings|positions? disclosure|bond|treasury|dividend|oversold|\\bstock\\b|buy in december|share price"
+   },
+   "innovation": {
+    "must": "raises|raised|raising|funding|\\bseed\\b|series [A-Z]|IPO|acquir|valuation|估值|融资|收购|并购|上市|创业|startup|raise \\$|backed by",
+    "exclude": "mortgage|homebuyer|real estate|房产|房贷|whistleblower|revenue inflation|lawsuit|class action|securities filing"
+   },
+   "ai4s": {
+    "must": "AI|artificial intelligence|machine learning|neural|人工智能|大模型|protein|material|drug|medicine|climate|physics|chemistr|genome|molecule|cell|科研|蛋白质|材料|药物|气候|fusion|battery|catalyst",
+    "exclude": ""
+   },
+   "sz_policy": {
+    "must": "深圳|Shenzhen",
+    "exclude": "写字楼|出租|租金|楼盘|招商|公寓|二手|租房|在租|租赁中心"
+   },
+   "academy": {
+    "must": "基金|资助|申报|课题|博士后|留学|fellowship|grant|NSFC|国家自然科学|青年人才|项目申请|scholarship|research award|research funding",
+    "exclude": "NGO|donor|mangrove|Cameroon|Karamoja|Uganda|tribal|rural|community|women|agricultur|livestock|wetland|grazing|youth org|dry-season|water access|fundsforNGOs|developing country|Africa|wildlife|conservation|mangroves|township youth"
+   }
+  }
+ }
 }

@@ -37,11 +37,12 @@ cd "$WORK"
 
 # 3. 抓取并生成数据（有 ANTHROPIC_API_KEY 时自动生成中文要点，否则关键词兜底）
 python3 scripts/update.py
+python3 scripts/update_news.py || true
 
 # 4. 提交并推送
 git config user.name  "hectormeta"
 git config user.email "hectormeta@users.noreply.github.com"
-git add data.json summaries.json trends.json authors.json thumbs.json archive x
+git add data.json summaries.json trends.json authors.json thumbs.json archive x news/data.json
 if ! git diff --cached --quiet; then
   git commit -m "Update papers $(date +%F) (cloud)"
   git pull --rebase -X theirs origin main || true

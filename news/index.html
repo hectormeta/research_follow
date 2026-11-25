@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新闻与机会雷达 | AI · AI4S · 科创 · 政策基金</title>
+<meta name="description" content="每日汇总 AI 动态、科创新闻与机会、AI4S 资讯、深圳创业政策、学术政策与基金机会。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316202C'/%3E%3Crect x='7' y='9' width='3' height='15' fill='%236B3FD4'/%3E%3Crect x='12.5' y='6' width='3' height='18' fill='%2313926A'/%3E%3Crect x='18' y='11' width='3' height='13' fill='%23C08A00'/%3E%3Crect x='23.5' y='8' width='3' height='16' fill='%23D0402F'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F2F5F6; --paper:#FFFFFF; --ink:#16202C; --ink2:#45515E; --ink3:#7A8794; --rule:#D9E0E4; --focus:#2F6BD8;
+  --navy:#1F3550;
+  --serif:"Iowan Old Style","Charter","Source Han Serif SC","Songti SC","Noto Serif CJK SC",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 22px 80px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+header h1{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.15;margin:0;letter-spacing:-.01em}
+header .sub{margin:6px 0 0;color:var(--ink2);font-size:14px}
+.status{margin-top:4px;color:var(--ink3);font-size:13px;min-height:20px}
+.status .err{color:#B3261E}
+.nav{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:14px;font-weight:600;color:#fff;background:var(--navy);border-radius:8px;padding:7px 14px}
+.nav a:hover{background:#2A4668}
+.nav a.cur{background:#13926A}
+
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 6px}
+.tab{border:1px solid var(--rule);background:var(--paper);border-radius:999px;padding:6px 13px;font-size:13.5px;color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.tab i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.tab .n{color:var(--ink3);font-variant-numeric:tabular-nums;font-size:12px}
+.tab[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.tab[aria-pressed="true"] .n{color:#cfd8dd}
+.search{flex:1 1 180px;min-width:150px;border:1px solid var(--rule);border-radius:8px;padding:6px 12px;background:var(--paper);font-size:14px}
+
+.list{margin-top:10px}
+.item{display:grid;grid-template-columns:4px minmax(0,1fr);gap:0 16px;padding:15px 10px 13px;margin:0 -10px;border-bottom:1px solid #E3E8EB;border-radius:8px}
+.item:hover{background:rgba(255,255,255,.75)}
+.bar{border-radius:2px;overflow:hidden;min-height:44px}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.src{display:inline-block;font-family:var(--serif);font-style:italic;font-weight:700;font-size:13.5px;line-height:1.4;color:var(--navy);background:#E3EAF1;border-radius:4px;padding:0 8px}
+.top time{font-size:12.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.lang{font-size:11px;color:var(--ink3);border:1px solid var(--rule);border-radius:4px;padding:0 6px}
+.catchip{font-size:11.5px;border-radius:4px;padding:0 7px;color:#fff}
+.item .t{font-family:var(--serif);font-weight:600;font-size:17.5px;line-height:1.32;margin:0}
+.item .t a{text-decoration:none}
+.item .t a:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.sm{margin:6px 0 0;color:var(--ink);font-size:14px;line-height:1.6;max-width:72ch}
+.sm:empty{display:none}
+.tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:12px;color:var(--ink3);background:#F1F3F5;border-radius:4px;padding:0 7px}
+.empty{padding:40px 0;color:var(--ink2);text-align:center}
+.foot{margin-top:48px;padding-top:14px;border-top:1px solid var(--rule);color:var(--ink3);font-size:13px;max-width:76ch}
+.foot a{color:var(--ink2)}
+@media (max-width:680px){
+  .wrap{padding:20px 14px 60px}
+  header h1{font-size:23px}
+  .item{grid-template-columns:4px minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>新闻与机会雷达</h1>
+      <p class="sub" id="sub">正在读取资讯</p>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </div>
+    <nav class="nav">
+      <a href="../index.html">微纳光学文献</a>
+      <a href="../explore.html">趋势与探索</a>
+      <a href="../perm-portfolio/index.html">投资组合</a>
+      <a href="index.html" class="cur">新闻与机会</a>
+    </nav>
+  </header>
+
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <input class="search" id="search" type="search" placeholder="搜索标题 / 来源 / 摘要…" aria-label="搜索资讯">
+
+  <div class="list" id="list"></div>
+  <div class="empty" id="empty" hidden>当前分类下近期暂无符合条件的条目。</div>
+
+  <div class="foot">
+    <p>数据由脚本每日自动抓取生成，来源包括官方博客、RSS 与 Google News 聚合检索、arXiv 及政府官网公告；条目经关键词规则过滤，不代表编辑立场。政策与基金信息以官方原文为准。</p>
+    <p>分类：AI 信息 · 科创新闻/机会 · AI4S 资讯 · 深圳创业政策 · 学术政策与基金机会。</p>
+  </div>
+</div>
+
+<script>
+const LS = 'news.radar.v1';
+let DATA = null, CATS = [], active = 'all', query = '';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load = (k,d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+function fmt(ts){
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2,'0');
+  return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function catColor(id){ const c = CATS.find(x=>x.id===id); return c ? c.color : '#7A8794'; }
+function catName(id){ const c = CATS.find(x=>x.id===id); return c ? c.name : id; }
+
+function renderTabs(){
+  const counts = {};
+  for (const it of DATA.items) counts[it.cat] = (counts[it.cat]||0)+1;
+  const tabs = [{id:'all', name:'全部', color:'#1F3550'}, ...CATS];
+  document.getElementById('tabs').innerHTML = tabs.map(t => {
+    const n = t.id==='all' ? DATA.items.length : (counts[t.id]||0);
+    return `<button class="tab" role="tab" aria-pressed="${active===t.id}" data-cat="${t.id}">
+      <i style="background:${t.color}"></i>${esc(t.name)}<span class="n">${n}</span></button>`;
+  }).join('');
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+    active = b.dataset.cat; render();
+  }));
+}
+
+function render(){
+  const q = query.trim().toLowerCase();
+  const items = DATA.items.filter(it => {
+    if (active!=='all' && it.cat!==active) return false;
+    if (q && !(it.title+' '+it.summary+' '+it.src).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  items.sort((a,b)=>b.ts-a.ts);
+  document.getElementById('empty').hidden = items.length>0;
+  document.getElementById('list').innerHTML = items.map(it => `
+    <article class="item">
+      <div class="bar" style="background:${catColor(it.cat)}"></div>
+      <div>
+        <div class="top">
+          <span class="src">${esc(it.src)}</span>
+          <span class="catchip" style="background:${catColor(it.cat)}">${esc(catName(it.cat))}</span>
+          <time>${fmt(it.ts)}</time>
+          ${it.lang ? `<span class="lang">${it.lang==='zh'?'中文':'EN'}</span>` : ''}
+        </div>
+        <h3 class="t"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></h3>
+        ${it.summary ? `<p class="sm">${esc(it.summary)}</p>` : ''}
+        ${(it.tags&&it.tags.length) ? `<div class="tags">${it.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      </div>
+    </article>`).join('');
+}
+
+async function loadData(){
+  const r = await fetch('data.json', { cache:'no-cache' });
+  if (!r.ok) throw new Error('data.json '+r.status);
+  return r.json();
+}
+
+async function init(){
+  try {
+    DATA = await loadData();
+  } catch (e) {
+    document.getElementById('sub').textContent = '数据读取失败';
+    document.getElementById('status').innerHTML = `<span class="err">${esc(e.message)}；请稍后由定时任务重新生成。</span>`;
+    return;
+  }
+  CATS = DATA.cats || [];
+  const gen = DATA.generated ? new Date(DATA.generated).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  document.getElementById('sub').textContent = `每日自动更新 · ${DATA.items.length} 条 · 更新于 ${gen}`;
+  const errs = DATA.err || [];
+  document.getElementById('status').innerHTML = errs.length
+    ? `<span class="err">${errs.length} 个源暂时不可用，已保留上一版条目：${esc(errs.map(x=>x.name).join('、'))}</span>` : '';
+  renderTabs(); render();
+  document.getElementById('search').addEventListener('input', e => { query = e.target.value; render(); });
+  autoRefresh();
+}
+
+// 一天一次轮询版本；静置 60 秒且页面无展开内容时才静默重载
+function autoRefresh(){
+  const CHECK_MS = 24*3600*1000, IDLE_MS = 60*1000;
+  const cur = DATA.generated || 0;
+  let lastActive = Date.now(), pending = false;
+  ['click','scroll','keydown'].forEach(ev => addEventListener(ev, () => lastActive = Date.now(), {passive:true}));
+  async function check(){
+    try {
+      const v = await loadData();
+      if (v && v.generated && v.generated > cur) pending = true;
+    } catch {}
+    if (pending && Date.now()-lastActive >= IDLE_MS) location.reload();
+    else setTimeout(check, CHECK_MS);
+  }
+  setTimeout(check, CHECK_MS);
+}
+
+init();
+</script>
+</body>
+</html>
