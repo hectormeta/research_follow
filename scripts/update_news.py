@@ -331,14 +331,33 @@ def parse_arxiv(feed, body):
 
 
 # ------------------------------------------------------------- portal (校内门户, 需登录)
-# 勘察自门户登录页 JS：
+# 勘察自门户登录页 JS 与无头浏览器实测：
 #   POST /authModule/authenticate  form: username, password=RSA(pubkey, pw), reamId=1002
-#   code 100000001 成功 → 跟随 redirectUri 走 SSO OAuth 换取门户会话 cookie
-#   错误 100000004/100000005 累积 1 次即出图形验证码；短信 OTP 为另一登录方式(reamId 1006)
-# 列表/详情字段需登录后样本校准；未配置凭据时整源跳过，保留上一版条目。
+#   code 100000001 成功（返回本人 JWT）；100000004/100000005 累积 1 次出图形验证码；短信 OTP 为 reamId 1006
+#   实测未触发图形验证码/短信 OTP。认证后前端调 deviceInfo.action（返回 100000002/success=false 仅为设备
+#   信任提醒，不阻塞后端授权）；直跳 redirectUri 仍可经 SSO authorize 换 code 进入门户首页。
+#   首页卡片：标题 + MM-DD 发布日期；申请/项目类截止日期在详情正文；详情站 portal-info.sigs.tsinghua.edu.cn
+#   同样走 SSO（APP054）。列表/详情字段、ddl 位置待登录样本校准。
+# 待办：Python 侧 RSA PKCS#1 v1.5 加密与 WebVPN cookie 代理尚未实现；cron 环境库/网络可达性待验证。
+# 未配置凭据或适配器未就绪时整源跳过，保留上一版条目，异常记 err 不拖累其他源。
 PORTAL_BASE = os.environ.get('PORTAL_BASE', 'https://webvpn.sigs.tsinghua.edu.cn')
-PORTAL_USER = os.environ.get('PORTAL_USER', '').strip()
-PORTAL_PASS = os.environ.get('PORTAL_PASS', '').strip()
+
+
+def _load_portal_credentials():
+    """环境变量优先；缺失时回退到持久凭据文件（仓库外，权限 600）。不回显到日志。"""
+    user = os.environ.get('PORTAL_USER', '').strip()
+    pw = os.environ.get('PORTAL_PASS', '').strip()
+    if user and pw:
+        return user, pw
+    f = Path.home() / '.config' / 'research_follow' / 'portal.json'
+    try:
+        d = json.loads(f.read_text(encoding='utf-8'))
+        return str(d.get('username', '')).strip(), str(d.get('password', '')).strip()
+    except Exception:
+        return '', ''
+
+
+PORTAL_USER, PORTAL_PASS = _load_portal_credentials()
 _PORTAL_PUB = ('MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxP4tAiVbgkbHrXlB5iR+emMv98ApZaI0jKGtWst'
                '841Ive+U9LPKi/OXO431taskULnO4wrRqvqwwL9B6m5yfxtv0ADh2sJwJ0AeaPBJreDvK5tpqgk5'
                'Hc6YuU4t9Hn3AzVj9fmvcfufJ1RlpRkQ3KvIZyaxED7tjhCF2X2L3vOQIDAQAB')
