@@ -15,6 +15,7 @@ usage (repo root):
   python3 scripts/update_news.py --if-stale 20   # skip if data.json younger than 20 h
 """
 import os, re, sys, json, time, gzip, hashlib, html, datetime as dt, urllib.request, urllib.parse, urllib.error
+import http.cookiejar
 import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -43,6 +44,105 @@ for cid, f in _FILTERS.items():
     must = re.compile(f.get('must', ''), re.I) if f.get('must') else None
     excl = re.compile(f.get('exclude', ''), re.I) if f.get('exclude') else None
     FILTER_RE[cid] = (must, excl)
+
+# --- 主题相关度：复用 config.topics 的正则，命中即视为与微纳光学方向相关 ---
+TOPIC_RES = []
+for _t in cfg.get('topics', []):
+    if _t.get('id') == 'gen':
+        continue
+    try:
+        TOPIC_RES.append((_t['id'], _t['name'], re.compile(_t['re'], re.I)))
+    except re.error:
+        pass
+
+
+def relevance(text):
+    """返回命中的主题名列表（与本人微纳光学/光子学方向相关）。"""
+    hit = []
+    for _tid, name, rx in TOPIC_RES:
+        if rx.search(text or ''):
+            hit.append(name)
+    if not hit and _OPTICAL_FALLBACK.search(text or ''):
+        hit.append('光学')
+    return hit
+
+
+_OPTICAL_FALLBACK = re.compile(
+    r'超构|超表面|超材料|拓扑光子|非厄米|偏振|光场|结构光|光子晶体|光子器件|'
+    r'计算成像|光学传感|光电|微纳光学|纳米光子|超透镜|涡旋光|全息|微波|'
+    r'photonics?|optical|optic|laser|terahertz|\bthz\b|polariton|metasurf|metamat', re.I)
+
+
+# --- 截止日期解析：只在含“截止/申报/ deadline”等语义词的句子里取日期 ---
+DDL_WORD = re.compile(
+    r'截止|报名|申报|申请|投递|提交|截止日期|deadline|due (date|on)|'
+    r'applications? (close|open)|closed?|报名时间|申报时间', re.I)
+_CN_FULL = re.compile(r'(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?')
+_CN_MD = re.compile(r'(\d{1,2})\s*月\s*(\d{1,2})\s*日')
+_ISO = re.compile(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})')
+_MON = {'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,'jul':7,'aug':8,
+        'sep':9,'oct':10,'nov':11,'dec':12,
+        'january':1,'february':2,'march':3,'april':4,'june':6,'july':7,
+        'august':8,'september':9,'october':10,'november':11,'december':12}
+_EN_DATE = re.compile(
+    r'(\d{1,2})\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|'
+    r'Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|'
+    r'Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})'
+    r'|(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|'
+    r'Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|'
+    r'Dec(?:ember)?)\s+(\d{1,2}),?\s+(\d{4})', re.I)
+CST = dt.timezone(dt.timedelta(hours=8))
+
+
+def _ymd(y, m, d):
+    y, m, d = int(y), int(m), int(d)
+    if not (1 <= m <= 12 and 1 <= d <= 31):
+        return None
+    try:
+        return int(dt.datetime(int(y), int(m), int(d), 23, 59, 59,
+                               tzinfo=CST).timestamp() * 1000)
+    except ValueError:
+        return None
+
+
+def parse_deadline(text, now=None):
+    """从文本中提取截止日期（ms, +08:00 当天结束）；无明确 ddl 语境返回 None。"""
+    if not text:
+        return None
+    if now is None:
+        now = NOW_MS
+    elif hasattr(now, 'timestamp'):
+        now = now.timestamp() * 1000
+    now_ms = now
+    for sent in re.split(r'[。；;\n！!？?]', text):
+        if not DDL_WORD.search(sent):
+            continue
+        m = _CN_FULL.search(sent) or _ISO.search(sent)
+        if m:
+            y, mo, d = m.group(1), m.group(2), m.group(3)
+            v = _ymd(y, mo, d)
+            if v:
+                return v
+        m = _CN_MD.search(sent)
+        if m:
+            mo, d = int(m.group(1)), int(m.group(2))
+            y = dt.datetime.fromtimestamp(now_ms / 1000, CST).year
+            v = _ymd(y, mo, d)
+            if v and v < now_ms - 30 * DAY_MS:  # 月日已过则归到下一年
+                v = _ymd(y + 1, mo, d)
+            if v:
+                return v
+        m = _EN_DATE.search(sent)
+        if m:
+            if m.group(1):  # D Mon YYYY
+                d, mon, y = m.group(1), m.group(2).lower(), m.group(3)
+                v = _ymd(y, _MON.get(mon[:3], 0), d)
+            else:           # Mon D, YYYY
+                mon, d, y = m.group(4).lower(), m.group(5), m.group(6)
+                v = _ymd(y, _MON.get(mon[:3], 0), d)
+            if v:
+                return v
+    return None
 
 
 def pass_filter(cat, text, src=''):
@@ -230,6 +330,83 @@ def parse_arxiv(feed, body):
     return out
 
 
+# ------------------------------------------------------------- portal (校内门户, 需登录)
+# 勘察自门户登录页 JS：
+#   POST /authModule/authenticate  form: username, password=RSA(pubkey, pw), reamId=1002
+#   code 100000001 成功 → 跟随 redirectUri 走 SSO OAuth 换取门户会话 cookie
+#   错误 100000004/100000005 累积 1 次即出图形验证码；短信 OTP 为另一登录方式(reamId 1006)
+# 列表/详情字段需登录后样本校准；未配置凭据时整源跳过，保留上一版条目。
+PORTAL_BASE = os.environ.get('PORTAL_BASE', 'https://webvpn.sigs.tsinghua.edu.cn')
+PORTAL_USER = os.environ.get('PORTAL_USER', '').strip()
+PORTAL_PASS = os.environ.get('PORTAL_PASS', '').strip()
+_PORTAL_PUB = ('MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxP4tAiVbgkbHrXlB5iR+emMv98ApZaI0jKGtWst'
+               '841Ive+U9LPKi/OXO431taskULnO4wrRqvqwwL9B6m5yfxtv0ADh2sJwJ0AeaPBJreDvK5tpqgk5'
+               'Hc6YuU4t9Hn3AzVj9fmvcfufJ1RlpRkQ3KvIZyaxED7tjhCF2X2L3vOQIDAQAB')
+
+
+def _portal_opener():
+    cj = http.cookiejar.CookieJar()
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    op.addheaders = list(UA.items())
+    return op
+
+
+def _rsa_encrypt_password(pw):
+    # TODO(校准): RSA PKCS#1 v1.5 加密（浏览器端 JSEncrypt.setPublicKey(_PORTAL_PUB).encrypt(pw) → base64）。
+    # 纯标准库实现幂模+padding，或在允许时引入 cryptography；待凭据实测时补齐。
+    raise NotImplementedError('portal RSA 加密待凭据实测时校准')
+
+
+def portal_login(opener):
+    """登录门户；成功返回 True。缺凭据返回 False，其余失败/验证码/OTP 抛异常交主流程记 err。"""
+    if not PORTAL_USER or not PORTAL_PASS:
+        return False
+    cred = urllib.parse.urlencode({
+        'username': PORTAL_USER,
+        'password': _rsa_encrypt_password(PORTAL_PASS),
+        'reamId': '1002',
+    }).encode()
+    req = urllib.request.Request(PORTAL_BASE + '/authModule/authenticate', data=cred)
+    with opener.open(req, timeout=30) as r:
+        data = json.loads(r.read().decode('utf-8', 'replace'))
+    if str(data.get('code')) != '100000001':
+        raise RuntimeError(f'门户登录未通过: code={data.get("code")} msg={str(data.get("msg"))[:80]}')
+    # 成功后 redirectUri 指向 SSO authorize → checklogin，跟随 302 即落下会话 cookie
+    return True
+
+
+def parse_portal_list(feed, body):
+    """从门户列表页提取条目。列表字段/详情 ddl 待登录后样本校准；暂复用 li/a 解析。"""
+    out = []
+    for li in re.findall(r'<li[^>]*>(.*?)</li>', body, re.S):
+        m = re.search(r'<a[^>]*href="([^"]+)"[^>]*?(?:title="([^"]*)")?>(.*?)</a>', li, re.S)
+        if not m:
+            continue
+        url = urllib.parse.urljoin(feed['url'], m.group(1))
+        title = clean(m.group(2)) or clean(m.group(3))
+        if not title:
+            continue
+        dm = re.search(r'(20\d{2})[-/年](\d{1,2})[-/月](\d{1,2})', li)
+        ts = None
+        if dm:
+            ts = int(dt.datetime(int(dm[1]), int(dm[2]), int(dm[3]), tzinfo=CST).timestamp() * 1000)
+        it = make_item(feed, title, '', feed['name'], url, ts)
+        if it:
+            out.append(it)
+    return out
+
+
+def fetch_portal(feed):
+    if not PORTAL_USER or not PORTAL_PASS:
+        print(f"  {feed['id']:14s} skipped: 未配置 PORTAL_USER/PORTAL_PASS")
+        return []
+    opener = _portal_opener()
+    portal_login(opener)
+    with opener.open(feed['url'], timeout=30) as r:
+        body = r.read().decode('utf-8', 'replace')
+    return parse_portal_list(feed, body)
+
+
 def reclassify(feed, item):
     rules = feed.get('reclass')
     if not rules:
@@ -256,6 +433,8 @@ def fetch_feed(feed):
         url = f'https://export.arxiv.org/api/query?search_query={q}&sortBy=submittedDate&sortOrder=descending&max_results=40'
         body = cache_get(feed['id'], url)
         return parse_arxiv(feed, body)
+    if feed['type'] == 'portal':
+        return fetch_portal(feed)
     return []
 
 
@@ -295,6 +474,10 @@ def main():
                 text = it['title'] + ' ' + it['summary']
                 if not pass_filter(it['cat'], text, it['src']):
                     continue
+                hit = relevance(text)
+                it['rtopics'] = hit
+                it['rel'] = len(hit)
+                it['ddl'] = parse_deadline(text)
                 tk = norm_title(it['title'])
                 if tk in by_title and by_title[tk] != it['k']:
                     continue

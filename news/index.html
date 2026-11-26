@@ -52,6 +52,16 @@ header .sub{margin:6px 0 0;color:var(--ink2);font-size:14px}
 .sm:empty{display:none}
 .tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
 .tag{font-size:12px;color:var(--ink3);background:#F1F3F5;border-radius:4px;padding:0 7px}
+.item.rel{background:linear-gradient(90deg,rgba(107,63,212,.07),rgba(255,255,255,0) 55%)}
+.item.rel .bar{background:#6B3FD4!important}
+.relmark{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:#6B3FD4;border:1px solid #6B3FD4;border-radius:4px;padding:0 7px}
+.ddl{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:4px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.ddl.soon{background:#FBE9E7;color:#B3261E}
+.ddl.mid{background:#FBF1DC;color:#8A6100}
+.ddl.late{background:#E6EEF9;color:#1F3550}
+.ddl.over{background:#F1F3F5;color:var(--ink3)}
+.reltopics{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
+.reltopics .tag{color:#6B3FD4;background:#F0EAFB}
 .empty{padding:40px 0;color:var(--ink2);text-align:center}
 .foot{margin-top:48px;padding-top:14px;border-top:1px solid var(--rule);color:var(--ink3);font-size:13px;max-width:76ch}
 .foot a{color:var(--ink2)}
@@ -94,10 +104,26 @@ header .sub{margin:6px 0 0;color:var(--ink2);font-size:14px}
 <script>
 const LS = 'news.radar.v1';
 let DATA = null, CATS = [], active = 'all', query = '';
+const NOW = Date.now();
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const load = (k,d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const save = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+function ddlInfo(ddl){
+  if(!ddl) return null;
+  const days = Math.ceil((ddl - NOW) / 864e5);
+  if(days < 0) return {cls:'over', label:'已截止'};
+  if(days === 0) return {cls:'soon', label:'今天截止'};
+  if(days <= 7) return {cls:'soon', label:`还剩 ${days} 天`};
+  if(days <= 30) return {cls:'mid', label:`还剩 ${days} 天`};
+  return {cls:'late', label:`还剩 ${days} 天`};
+}
+
+function ddlDate(ddl){
+  const d = new Date(ddl), p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
 
 function fmt(ts){
   const d = new Date(ts);
@@ -129,23 +155,40 @@ function render(){
     if (q && !(it.title+' '+it.summary+' '+it.src).toLowerCase().includes(q)) return false;
     return true;
   });
-  items.sort((a,b)=>b.ts-a.ts);
+  const ddlRank = it => !it.ddl ? 1 : (it.ddl < NOW ? 2 : 0);
+  items.sort((a, b) => {
+    const ra = (a.rel > 0 ? 0 : 1), rb = (b.rel > 0 ? 0 : 1);
+    if (ra !== rb) return ra - rb;
+    const da = ddlRank(a), db = ddlRank(b);
+    if (da !== db) return da - db;
+    if (da === 0) return a.ddl - b.ddl;
+    if (da === 2) return b.ddl - a.ddl;
+    return b.ts - a.ts;
+  });
   document.getElementById('empty').hidden = items.length>0;
-  document.getElementById('list').innerHTML = items.map(it => `
-    <article class="item">
+  document.getElementById('list').innerHTML = items.map(it => {
+    const rel = (it.rel > 0);
+    const ddl = ddlInfo(it.ddl);
+    const topics = it.rtopics || [];
+    return `
+    <article class="item${rel ? ' rel' : ''}">
       <div class="bar" style="background:${catColor(it.cat)}"></div>
       <div>
         <div class="top">
           <span class="src">${esc(it.src)}</span>
           <span class="catchip" style="background:${catColor(it.cat)}">${esc(catName(it.cat))}</span>
+          ${rel ? `<span class="relmark">相关</span>` : ''}
+          ${ddl ? `<span class="ddl ${ddl.cls}">${esc(ddl.label)}${it.ddl ? ` · ${ddlDate(it.ddl)}` : ''}</span>` : ''}
           <time>${fmt(it.ts)}</time>
           ${it.lang ? `<span class="lang">${it.lang==='zh'?'中文':'EN'}</span>` : ''}
         </div>
         <h3 class="t"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></h3>
         ${it.summary ? `<p class="sm">${esc(it.summary)}</p>` : ''}
+        ${topics.length ? `<div class="reltopics">${topics.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
         ${(it.tags&&it.tags.length) ? `<div class="tags">${it.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       </div>
-    </article>`).join('');
+    </article>`;
+  }).join('');
 }
 
 async function loadData(){
