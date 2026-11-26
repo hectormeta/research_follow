@@ -14,8 +14,7 @@ usage (repo root):
   python3 scripts/update_news.py
   python3 scripts/update_news.py --if-stale 20   # skip if data.json younger than 20 h
 """
-import os, re, sys, json, time, gzip, hashlib, html, ssl, datetime as dt, urllib.request, urllib.parse, urllib.error
-import http.cookiejar
+import os, re, sys, json, time, gzip, hashlib, html, subprocess, tempfile, shutil, datetime as dt, urllib.request, urllib.parse, urllib.error
 import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -217,7 +216,8 @@ def make_item(feed, title, summary, src, url, ts, tags=None):
     if not title or not url:
         return None
     summary = clean(summary)[:240]
-    k = hashlib.md5(url.encode()).hexdigest()[:16]
+    # url 与标题共同入键：列表卡片常回退同一 feed url，仅按 url 哈希会互相覆盖
+    k = hashlib.md5((url + '|' + norm_title(title)).encode()).hexdigest()[:16]
     lang = 'zh' if CJK.search(title) else 'en'
     return {
         'k': k, 'cat': feed['cat'], 'title': title, 'summary': summary,
@@ -358,78 +358,13 @@ def _load_portal_credentials():
 
 
 PORTAL_USER, PORTAL_PASS = _load_portal_credentials()
-_PORTAL_PUB = ('MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxP4tAiVbgkbHrXlB5iR+emMv98ApZaI0jKGtWst'
-               '841Ive+U9LPKi/OXO431taskULnO4wrRqvqwwL9B6m5yfxtv0ADh2sJwJ0AeaPBJreDvK5tpqgk5'
-               'Hc6YuU4t9Hn3AzVj9fmvcfufJ1RlpRkQ3KvIZyaxED7tjhCF2X2L3vOQIDAQAB')
 PORTAL_HOME = os.environ.get(
     'PORTAL_HOME',
-    PORTAL_BASE + '/https/77726476706e69737468656265737421e0f85388263c2643770f9ae28c462a3b9c03027879bfa2a49d2feb/sigsPortal/home?type=fs_info&lang=zh')
-
-
-def _portal_ssl():
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    return ctx
-
-
-def _portal_opener():
-    cj = http.cookiejar.CookieJar()
-    op = urllib.request.build_opener(
-        urllib.request.HTTPCookieProcessor(cj),
-        urllib.request.HTTPSHandler(context=_portal_ssl()))
-    op.addheaders = list(UA.items())
-    return op
-
-
-def _rsa_encrypt_password(pw):
-    """RSA/1024 PKCS#1 v1.5 加密（与浏览器 JSEncrypt 一致）→ base64。缺 cryptography 抛异常。"""
-    import base64 as _b64
-    from cryptography.hazmat.primitives.serialization import load_der_public_key
-    from cryptography.hazmat.primitives.asymmetric import padding
-    key = load_der_public_key(_b64.b64decode(_PORTAL_PUB))
-    return _b64.b64encode(key.encrypt(pw.encode('utf-8'), padding.PKCS1v15())).decode('ascii')
-
-
-def _portal_bundle(url):
-    m = re.search(r'/https/([0-9a-f]+)/', url)
-    return m.group(1) if m else None
-
-
-def portal_login(opener):
-    """登录门户。缺凭据返回 False；认证失败/验证码/异常抛错交主流程记 err。"""
-    if not PORTAL_USER or not PORTAL_PASS:
-        return False
-    with opener.open(PORTAL_HOME, timeout=30) as r:
-        page = r.read().decode('utf-8', 'replace')
-        final = r.geturl()
-    bundle = _portal_bundle(final) or _portal_bundle(PORTAL_HOME)
-    rm = re.search(r'id="redirectUri"[^>]*value="([^"]*)"', page)
-    redirect = urllib.parse.unquote(html.unescape(rm.group(1))) if rm else ''
-
-    cred = urllib.parse.urlencode({
-        'username': PORTAL_USER,
-        'password': _rsa_encrypt_password(PORTAL_PASS),
-        'reamId': '1002',
-    }).encode()
-    auth_url = f'{PORTAL_BASE}/https/{bundle}/authModule/authenticate' if bundle else PORTAL_BASE + '/authModule/authenticate'
-    req = urllib.request.Request(auth_url, data=cred,
-                                 headers={'Content-Type': 'application/x-www-form-urlencoded'})
-    with opener.open(req, timeout=30) as r:
-        data = json.loads(r.read().decode('utf-8', 'replace'))
-    if str(data.get('code')) != '100000001':
-        raise RuntimeError(f'门户登录未通过: code={data.get("code")} msg={str(data.get("msg"))[:80]}')
-
-    # 跟随 SSO authorize 换门户会话（WebVPN 代理写 cookie，可能未落地；未落地时首页为未登录壳，解析为空）
-    if bundle and redirect:
-        opener.open(f'{PORTAL_BASE}/https/{bundle}{redirect}', timeout=30).read()
-    return True
+    PORTAL_BASE + '/https/77726476706e69737468656265737421e0f85388263c2643770f9ae28c462a3b9c03027879bfa2a49d2feb/sigsPortal/home?org=&page=page_group_teacher_home&tab=news&top_external_id=top_portal_manage&type=fs_info&lang=zh')
 
 
 _PORTAL_CARD = re.compile(
-    r'<a[^>]*style="display:\s*block[^>]*>\s*<div[^>]*>\s*'
-    r'<div[^>]*>\s*<a class="LpEu0_0e"><span>([^<]+)</span></a>\s*</div>\s*'
-    r'<div[^>]*>\s*(\d{1,2})-(\d{1,2})\s*</div>', re.S)
+    r'<a class="LpEu0_0e"><span>([^<]*)</span></a>.*?(\d{1,2})-(\d{1,2})', re.S)
 
 
 def _portal_md_ts(mo, d):
@@ -441,7 +376,7 @@ def _portal_md_ts(mo, d):
 
 
 def parse_portal_list(feed, body):
-    """从门户首页 SSR HTML 提取卡片标题与发布日期；详情 ddl 待详情接口校准。"""
+    """从门户首页 HTML 提取卡片标题与发布日期；详情 ddl 待详情接口校准。"""
     out = []
     for title, mo, d in _PORTAL_CARD.findall(body):
         title = clean(title)
@@ -455,19 +390,60 @@ def parse_portal_list(feed, body):
     return out
 
 
+def _portal_node_bin():
+    return os.environ.get('PORTAL_NODE') or shutil.which('node') or shutil.which('nodejs')
+
+
+def _portal_env_status():
+    """门户子进程前置能力自检：node、脚本、凭据是否就绪（playwright/浏览器由子进程退出码反映）。"""
+    return {
+        'node': bool(_portal_node_bin()),
+        'script': (ROOT / 'scripts' / 'portal_fetch.js').exists(),
+        'cred': bool(PORTAL_USER and PORTAL_PASS),
+    }
+
+
 def fetch_portal(feed):
+    """经 node+playwright 子进程登录抓首页 HTML，回交解析。子进程不可用/失败抛错由主流程记 err。"""
     if not PORTAL_USER or not PORTAL_PASS:
         print(f"  {feed['id']:14s} skipped: 未配置 PORTAL_USER/PORTAL_PASS")
         return []
-    opener = _portal_opener()
-    portal_login(opener)
-    target = feed.get('url') or PORTAL_HOME
-    with opener.open(target, timeout=30) as r:
-        raw = r.read()
-    if raw[:2] == b'\x1f\x8b':
-        raw = gzip.decompress(raw)
-    body = raw.decode('utf-8', 'replace')
-    return parse_portal_list(feed, body)
+    node = _portal_node_bin()
+    script = ROOT / 'scripts' / 'portal_fetch.js'
+    if not node or not script.exists():
+        raise RuntimeError('门户子进程不可用: node 或 portal_fetch.js 缺失')
+
+    fd, tmp = tempfile.mkstemp(suffix='.html', prefix='portal_')
+    os.close(fd)
+    env = dict(os.environ)
+    env.update({
+        'PORTAL_USER': PORTAL_USER,
+        'PORTAL_PASS': PORTAL_PASS,
+        'PORTAL_HOME': feed.get('url') or PORTAL_HOME,
+    })
+    _np = [os.environ.get('NODE_PATH', ''), '/opt/vm/preinstall/npm-global/lib/node_modules']
+    env['NODE_PATH'] = ':'.join(p for p in _np if p and Path(p).exists())
+    try:
+        try:
+            proc = subprocess.run([node, str(script), tmp], env=env,
+                                   capture_output=True, text=True, timeout=180)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError('门户子进程超时(180s)')
+        if proc.returncode == 2:
+            print(f"  {feed['id']:14s} skipped: 子进程报告缺凭据")
+            return []
+        if proc.returncode == 3:
+            raise RuntimeError('门户认证失败: 账密错误 / 图形验证码 / 短信 OTP')
+        if proc.returncode != 0:
+            err = (proc.stderr or proc.stdout or '')[:140]
+            raise RuntimeError(f'门户子进程退出 {proc.returncode}: {err}')
+        body = Path(tmp).read_text(encoding='utf-8', errors='replace') if Path(tmp).exists() else ''
+        return parse_portal_list(feed, body)
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
 
 
 def reclassify(feed, item):
@@ -577,6 +553,7 @@ def main():
         'cats': NEWS.get('cats', []),
         'items': capped,
         'err': errs,
+        'portal_env': _portal_env_status(),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
