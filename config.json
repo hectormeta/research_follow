@@ -1349,6 +1349,11 @@
     "id": "academy",
     "name": "学术政策与基金机会",
     "color": "#D0402F"
+   },
+   {
+    "id": "college",
+    "name": "学院信息",
+    "color": "#0E7C86"
    }
   ],
   "feeds": [
@@ -1517,6 +1522,14 @@
     "url": "https://hrss.sz.gov.cn/tzgg/index.html",
     "include": "补贴|资助|人才|博士后|创业|就业|培训|扶持|政策|申报|高层次|留学|入户|岗位|进站|求职|引才|创业担保",
     "exclude": "工伤|送达公告|社会保险待遇|建筑劳务|工程公司|认定工伤|退回"
+   },
+   {
+    "id": "portal",
+    "name": "学院通知",
+    "cat": "college",
+    "type": "portal",
+    "url": "https://webvpn.sigs.tsinghua.edu.cn/https/77726476706e69737468656265737421e0f85388263c2643770f9ae28c462a3b9c03027879bfa2a49d2feb/sigsPortal/home?type=fs_info&lang=zh",
+    "enabled": false
    }
   ],
   "science_terms": "protein|materials?|chemistr|physics|climate|fusion|genome|molecule|drug|medicine|biology|cell|crystal|battery|catalyst|disease|patient|ecosystem|ocean|astronomy|particle|quantum",

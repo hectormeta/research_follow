@@ -137,7 +137,8 @@ function catName(id){ const c = CATS.find(x=>x.id===id); return c ? c.name : id;
 function renderTabs(){
   const counts = {};
   for (const it of DATA.items) counts[it.cat] = (counts[it.cat]||0)+1;
-  const tabs = [{id:'all', name:'全部', color:'#1F3550'}, ...CATS];
+  const tabs = [{id:'all', name:'全部', color:'#1F3550'}, ...CATS]
+    .filter(t => t.id==='all' || (counts[t.id]||0)>0);
   document.getElementById('tabs').innerHTML = tabs.map(t => {
     const n = t.id==='all' ? DATA.items.length : (counts[t.id]||0);
     return `<button class="tab" role="tab" aria-pressed="${active===t.id}" data-cat="${t.id}">

@@ -14,7 +14,7 @@ usage (repo root):
   python3 scripts/update_news.py
   python3 scripts/update_news.py --if-stale 20   # skip if data.json younger than 20 h
 """
-import os, re, sys, json, time, gzip, hashlib, html, datetime as dt, urllib.request, urllib.parse, urllib.error
+import os, re, sys, json, time, gzip, hashlib, html, ssl, datetime as dt, urllib.request, urllib.parse, urllib.error
 import http.cookiejar
 import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
@@ -361,56 +361,96 @@ PORTAL_USER, PORTAL_PASS = _load_portal_credentials()
 _PORTAL_PUB = ('MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxP4tAiVbgkbHrXlB5iR+emMv98ApZaI0jKGtWst'
                '841Ive+U9LPKi/OXO431taskULnO4wrRqvqwwL9B6m5yfxtv0ADh2sJwJ0AeaPBJreDvK5tpqgk5'
                'Hc6YuU4t9Hn3AzVj9fmvcfufJ1RlpRkQ3KvIZyaxED7tjhCF2X2L3vOQIDAQAB')
+PORTAL_HOME = os.environ.get(
+    'PORTAL_HOME',
+    PORTAL_BASE + '/https/77726476706e69737468656265737421e0f85388263c2643770f9ae28c462a3b9c03027879bfa2a49d2feb/sigsPortal/home?type=fs_info&lang=zh')
+
+
+def _portal_ssl():
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
 def _portal_opener():
     cj = http.cookiejar.CookieJar()
-    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    op = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(cj),
+        urllib.request.HTTPSHandler(context=_portal_ssl()))
     op.addheaders = list(UA.items())
     return op
 
 
 def _rsa_encrypt_password(pw):
-    # TODO(校准): RSA PKCS#1 v1.5 加密（浏览器端 JSEncrypt.setPublicKey(_PORTAL_PUB).encrypt(pw) → base64）。
-    # 纯标准库实现幂模+padding，或在允许时引入 cryptography；待凭据实测时补齐。
-    raise NotImplementedError('portal RSA 加密待凭据实测时校准')
+    """RSA/1024 PKCS#1 v1.5 加密（与浏览器 JSEncrypt 一致）→ base64。缺 cryptography 抛异常。"""
+    import base64 as _b64
+    from cryptography.hazmat.primitives.serialization import load_der_public_key
+    from cryptography.hazmat.primitives.asymmetric import padding
+    key = load_der_public_key(_b64.b64decode(_PORTAL_PUB))
+    return _b64.b64encode(key.encrypt(pw.encode('utf-8'), padding.PKCS1v15())).decode('ascii')
+
+
+def _portal_bundle(url):
+    m = re.search(r'/https/([0-9a-f]+)/', url)
+    return m.group(1) if m else None
 
 
 def portal_login(opener):
-    """登录门户；成功返回 True。缺凭据返回 False，其余失败/验证码/OTP 抛异常交主流程记 err。"""
+    """登录门户。缺凭据返回 False；认证失败/验证码/异常抛错交主流程记 err。"""
     if not PORTAL_USER or not PORTAL_PASS:
         return False
+    with opener.open(PORTAL_HOME, timeout=30) as r:
+        page = r.read().decode('utf-8', 'replace')
+        final = r.geturl()
+    bundle = _portal_bundle(final) or _portal_bundle(PORTAL_HOME)
+    rm = re.search(r'id="redirectUri"[^>]*value="([^"]*)"', page)
+    redirect = urllib.parse.unquote(html.unescape(rm.group(1))) if rm else ''
+
     cred = urllib.parse.urlencode({
         'username': PORTAL_USER,
         'password': _rsa_encrypt_password(PORTAL_PASS),
         'reamId': '1002',
     }).encode()
-    req = urllib.request.Request(PORTAL_BASE + '/authModule/authenticate', data=cred)
+    auth_url = f'{PORTAL_BASE}/https/{bundle}/authModule/authenticate' if bundle else PORTAL_BASE + '/authModule/authenticate'
+    req = urllib.request.Request(auth_url, data=cred,
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded'})
     with opener.open(req, timeout=30) as r:
         data = json.loads(r.read().decode('utf-8', 'replace'))
     if str(data.get('code')) != '100000001':
         raise RuntimeError(f'门户登录未通过: code={data.get("code")} msg={str(data.get("msg"))[:80]}')
-    # 成功后 redirectUri 指向 SSO authorize → checklogin，跟随 302 即落下会话 cookie
+
+    # 跟随 SSO authorize 换门户会话（WebVPN 代理写 cookie，可能未落地；未落地时首页为未登录壳，解析为空）
+    if bundle and redirect:
+        opener.open(f'{PORTAL_BASE}/https/{bundle}{redirect}', timeout=30).read()
     return True
 
 
+_PORTAL_CARD = re.compile(
+    r'<a[^>]*style="display:\s*block[^>]*>\s*<div[^>]*>\s*'
+    r'<div[^>]*>\s*<a class="LpEu0_0e"><span>([^<]+)</span></a>\s*</div>\s*'
+    r'<div[^>]*>\s*(\d{1,2})-(\d{1,2})\s*</div>', re.S)
+
+
+def _portal_md_ts(mo, d):
+    y = dt.datetime.now(CST).year
+    v = _ymd(y, mo, d)
+    if v and v < NOW_MS - 30 * DAY_MS:
+        v = _ymd(y + 1, mo, d)
+    return v
+
+
 def parse_portal_list(feed, body):
-    """从门户列表页提取条目。列表字段/详情 ddl 待登录后样本校准；暂复用 li/a 解析。"""
+    """从门户首页 SSR HTML 提取卡片标题与发布日期；详情 ddl 待详情接口校准。"""
     out = []
-    for li in re.findall(r'<li[^>]*>(.*?)</li>', body, re.S):
-        m = re.search(r'<a[^>]*href="([^"]+)"[^>]*?(?:title="([^"]*)")?>(.*?)</a>', li, re.S)
-        if not m:
-            continue
-        url = urllib.parse.urljoin(feed['url'], m.group(1))
-        title = clean(m.group(2)) or clean(m.group(3))
+    for title, mo, d in _PORTAL_CARD.findall(body):
+        title = clean(title)
         if not title:
             continue
-        dm = re.search(r'(20\d{2})[-/年](\d{1,2})[-/月](\d{1,2})', li)
-        ts = None
-        if dm:
-            ts = int(dt.datetime(int(dm[1]), int(dm[2]), int(dm[3]), tzinfo=CST).timestamp() * 1000)
-        it = make_item(feed, title, '', feed['name'], url, ts)
+        ts = _portal_md_ts(int(mo), int(d))
+        it = make_item(feed, title, '', feed['name'], feed['url'], ts)
         if it:
+            it['ddl'] = parse_deadline(title)
             out.append(it)
     return out
 
@@ -421,8 +461,12 @@ def fetch_portal(feed):
         return []
     opener = _portal_opener()
     portal_login(opener)
-    with opener.open(feed['url'], timeout=30) as r:
-        body = r.read().decode('utf-8', 'replace')
+    target = feed.get('url') or PORTAL_HOME
+    with opener.open(target, timeout=30) as r:
+        raw = r.read()
+    if raw[:2] == b'\x1f\x8b':
+        raw = gzip.decompress(raw)
+    body = raw.decode('utf-8', 'replace')
     return parse_portal_list(feed, body)
 
 
@@ -475,6 +519,9 @@ def main():
     errs, fresh = [], []
 
     for feed in NEWS.get('feeds', []):
+        if feed.get('enabled') is False:
+            print(f"  {feed['id']:14s} disabled (待命)")
+            continue
         try:
             items = fetch_feed(feed)
             # optional feed-level include / exclude regex
