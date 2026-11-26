@@ -134,10 +134,14 @@ def get(url, timeout=60, data=None, headers=None, tries=5, want_url=False):
             if e.code not in (429, 500, 502, 503, 504):
                 raise
             ra = e.headers.get('Retry-After') if e.headers else None
-            time.sleep(min(60, float(ra)) if ra and ra.replace('.', '').isdigit() else 6 * (i + 1))
+            if ra and ra.replace('.', '').isdigit():
+                wait = min(60, float(ra))
+            else:
+                wait = min(60, 5 * 2 ** i) + (i % 3) * 2  # exponential backoff with jitter
+            time.sleep(wait)
         except Exception as e:
             err = e
-            time.sleep(4 * (i + 1))
+            time.sleep(min(60, 4 * 2 ** i) + (i % 3) * 2)
     raise err
 
 
@@ -213,29 +217,44 @@ def fetch_arxiv(month=None):
 
 def fetch_crossref(s, frm=None, until=None):
     frm = frm or (NOW - dt.timedelta(days=WINDOW)).date().isoformat()
-    flt = (f"prefix:{s['prefix']},type:posted-content" if s.get('prefix') else f"issn:{s['issn']},type:journal-article")
-    flt += f",from-created-date:{frm}" + (f",until-created-date:{until}" if until else '')
     # page cache so large sources (e.g. Research Square) resume across time-limited runs
     pc = RAW / 'pages' / f"cr_{s['id']}_{frm}_{until or 'now'}.json"
     pc.parent.mkdir(parents=True, exist_ok=True)
     st = jload(pc, {})
     if time.time() - st.get('t0', 0) > RAW_TTL:
         st = {'t0': time.time(), 'items': [], 'cursor': '*', 'done': False}
-    while not st['done']:
-        check_time()
-        rows = 200 if until else 1000   # history queries are slow server-side; small pages cache progress
+    rows = 200 if until else 1000   # history queries are slow server-side; small pages cache progress
+
+    def query(date_key):
+        flt = (f"prefix:{s['prefix']},type:posted-content" if s.get('prefix') else f"issn:{s['issn']},type:journal-article")
+        flt += f",from-{date_key}:{frm}" + (f",until-{date_key}:{until}" if until else '')
         url = ('https://api.crossref.org/works?filter=' + flt + f'&sort=created&order=desc&rows={rows}'
                + '&select=DOI,title,author,created,abstract,URL&mailto=' + urllib.parse.quote(CONTACT)
                + '&cursor=' + urllib.parse.quote(st['cursor']))
-        m = json.loads(get(url, 110, tries=3))['message']
-        page = m.get('items', [])
-        st['raw'] = st.get('raw', 0) + len(page)
-        if s.get('prefix'):   # big preprint servers: keep only candidate papers in the page cache
-            page = [i for i in page if BROAD.search(clean((i.get('title') or [''])[0]) + ' ' + clean(i.get('abstract')))]
-        st['items'] += page
-        st['done'] = len(m.get('items', [])) < rows or not m.get('next-cursor') or st['raw'] >= m.get('total-results', 0)
-        st['cursor'] = m.get('next-cursor') or st['cursor']
-        jsave(pc, st)
+        return json.loads(get(url, 110, tries=6))['message']
+
+    # Crossref intermittently returns 502 against the created-date index for some ISSNs; retry the
+    # same window against the pub-date index before giving up.
+    last_err = None
+    for date_key in ('created-date', 'pub-date'):
+        try:
+            while not st['done']:
+                check_time()
+                m = query(date_key)
+                page = m.get('items', [])
+                st['raw'] = st.get('raw', 0) + len(page)
+                if s.get('prefix'):   # big preprint servers: keep only candidate papers in the page cache
+                    page = [i for i in page if BROAD.search(clean((i.get('title') or [''])[0]) + ' ' + clean(i.get('abstract')))]
+                st['items'] += page
+                st['done'] = len(m.get('items', [])) < rows or not m.get('next-cursor') or st['raw'] >= m.get('total-results', 0)
+                st['cursor'] = m.get('next-cursor') or st['cursor']
+                jsave(pc, st)
+            break
+        except Exception as e:
+            last_err = e
+            st = {'t0': time.time(), 'items': [], 'cursor': '*', 'done': False}  # reset progress for fallback key
+    else:
+        raise last_err
     items = st['items']
     out = []
     for it in items:
@@ -249,6 +268,50 @@ def fetch_crossref(s, frm=None, until=None):
                     'authors': [' '.join(x for x in (a.get('given'), a.get('family')) if x) or a.get('name', '')
                                 for a in it.get('author', [])],
                     'ts': it['created']['timestamp'], 'url': it.get('URL') or 'https://doi.org/' + it['DOI']})
+    return out
+
+
+def fetch_openalex(s, frm=None):
+    """OpenAlex fallback for journals whose Crossref index keeps returning 502. Output mirrors fetch_crossref."""
+    frm = frm or (NOW - dt.timedelta(days=WINDOW)).date().isoformat()
+    issn = s.get('issn')
+    if not issn:
+        raise ValueError('OpenAlex fallback requires an ISSN')
+    out, page, seen = [], 1, set()
+    while True:
+        check_time()
+        url = ('https://api.openalex.org/works?filter=primary_location.source.issn:' + issn
+               + ',from_publication_date:' + frm
+               + '&sort=publication_date:desc&per-page=200&page=' + str(page)
+               + '&select=doi,title,publication_date,authorships,abstract_inverted_index&mailto='
+               + urllib.parse.quote(CONTACT))
+        m = json.loads(get(url, 45, tries=5))
+        rows = m.get('results', [])
+        if not rows:
+            break
+        for w in rows:
+            doi = (w.get('doi') or '').replace('https://doi.org/', '').lower()
+            if not doi or doi in seen:
+                continue
+            seen.add(doi)
+            title = clean(w.get('title') or '')
+            if not title:
+                continue
+            pub = w.get('publication_date') or frm
+            try:
+                ts = iso_ms(pub + 'T00:00:00Z')
+            except Exception:
+                ts = NOW_MS
+            authors = [(a.get('author') or {}).get('display_name') or a.get('raw_author_name') or ''
+                       for a in w.get('authorships', [])]
+            out.append({'key': 'doi:' + doi, 'src': s['id'], 'title': title,
+                        'abs': oa_abstract(w.get('abstract_inverted_index')),
+                        'authors': [a for a in authors if a], 'ts': ts,
+                        'url': 'https://doi.org/' + doi})
+        if len(rows) < 200 or len(out) >= 1000:
+            break
+        page += 1
+        time.sleep(0.5)
     return out
 
 
@@ -281,13 +344,27 @@ def fetch_all(threads):
         d = jload(f, None)
         if d and time.time() - d.get('t', 0) < RAW_TTL:
             return s['id'], d['papers'], d['err']
+
+        def err_str(e):
+            return f'{type(e).__name__}: {getattr(e, "reason", None) or e}'[:160]
+
         try:
-            lst = fetch_arxiv() if s['id'] == 'arxiv' else fetch_crossref(s)
+            if s['id'] == 'arxiv':
+                lst = fetch_arxiv()
+            else:
+                try:
+                    lst = fetch_crossref(s)
+                except Exception as ce:
+                    if s.get('issn'):   # Crossref index 502s: fall back to OpenAlex by ISSN
+                        print(f'{s["id"]}: crossref failed ({err_str(ce)[:80]}), OpenAlex fallback', flush=True)
+                        lst = fetch_openalex(s)
+                    else:
+                        raise
             err = None
         except OutOfTime:
             return None
         except Exception as e:
-            lst, err = [], f'{type(e).__name__}: {e}'[:160]
+            lst, err = [], err_str(e)
         # papers without an abstract (APS, Science, ...) are kept for now and filtered after OpenAlex enrichment
         lst = [p for p in lst if not p.get('abs') or s.get('fallback') or BROAD.search(p['title'] + ' ' + p['abs'])]
         if not err:  # never cache failures, so the next run retries
