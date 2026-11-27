@@ -537,7 +537,7 @@ def main():
             print(f"  {feed['id']:14s} ERROR {e}")
 
     items = list(by_key.values())
-    items.sort(key=lambda p: -p['ts'])
+    items.sort(key=lambda p: (-(p.get('rel') or 0), -p['ts']))
     # per-category cap
     capped = []
     seen_cat = {}

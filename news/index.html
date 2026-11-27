@@ -158,8 +158,7 @@ function render(){
   });
   const ddlRank = it => !it.ddl ? 1 : (it.ddl < NOW ? 2 : 0);
   items.sort((a, b) => {
-    const ra = (a.rel > 0 ? 0 : 1), rb = (b.rel > 0 ? 0 : 1);
-    if (ra !== rb) return ra - rb;
+    if ((b.rel || 0) !== (a.rel || 0)) return (b.rel || 0) - (a.rel || 0);
     const da = ddlRank(a), db = ddlRank(b);
     if (da !== db) return da - db;
     if (da === 0) return a.ddl - b.ddl;
