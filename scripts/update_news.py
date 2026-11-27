@@ -363,29 +363,19 @@ PORTAL_HOME = os.environ.get(
     PORTAL_BASE + '/https/77726476706e69737468656265737421e0f85388263c2643770f9ae28c462a3b9c03027879bfa2a49d2feb/sigsPortal/home?org=&page=page_group_teacher_home&tab=news&top_external_id=top_portal_manage&type=fs_info&lang=zh')
 
 
-_PORTAL_CARD = re.compile(
-    r'<a class="LpEu0_0e"><span>([^<]*)</span></a>.*?(\d{1,2})-(\d{1,2})', re.S)
-
-
-def _portal_md_ts(mo, d):
-    y = dt.datetime.now(CST).year
-    v = _ymd(y, mo, d)
-    if v and v < NOW_MS - 30 * DAY_MS:
-        v = _ymd(y + 1, mo, d)
-    return v
-
-
-def parse_portal_list(feed, body):
-    """从门户首页 HTML 提取卡片标题与发布日期；详情 ddl 待详情接口校准。"""
+def parse_portal_cards(feed, cards):
+    """从子进程回传的卡片列表构造条目；body 为详情正文片段（可能为空，回退标题）。"""
     out = []
-    for title, mo, d in _PORTAL_CARD.findall(body):
-        title = clean(title)
+    for d in cards or []:
+        title = clean(d.get('title'))
         if not title:
             continue
-        ts = _portal_md_ts(int(mo), int(d))
-        it = make_item(feed, title, '', feed['name'], feed['url'], ts)
+        url = d.get('url') or feed['url']
+        ts = parse_date(d.get('date')) or NOW_MS
+        body = clean(d.get('body'))
+        it = make_item(feed, title, body, feed['name'], url, ts)
         if it:
-            it['ddl'] = parse_deadline(title)
+            it['ddl'] = parse_deadline(title + ' ' + body)
             out.append(it)
     return out
 
@@ -413,7 +403,7 @@ def fetch_portal(feed):
     if not node or not script.exists():
         raise RuntimeError('门户子进程不可用: node 或 portal_fetch.js 缺失')
 
-    fd, tmp = tempfile.mkstemp(suffix='.html', prefix='portal_')
+    fd, tmp = tempfile.mkstemp(suffix='.json', prefix='portal_')
     os.close(fd)
     env = dict(os.environ)
     env.update({
@@ -426,9 +416,9 @@ def fetch_portal(feed):
     try:
         try:
             proc = subprocess.run([node, str(script), tmp], env=env,
-                                   capture_output=True, text=True, timeout=180)
+                                   capture_output=True, text=True, timeout=240)
         except subprocess.TimeoutExpired:
-            raise RuntimeError('门户子进程超时(180s)')
+            raise RuntimeError('门户子进程超时(240s)')
         if proc.returncode == 2:
             print(f"  {feed['id']:14s} skipped: 子进程报告缺凭据")
             return []
@@ -437,8 +427,8 @@ def fetch_portal(feed):
         if proc.returncode != 0:
             err = (proc.stderr or proc.stdout or '')[:140]
             raise RuntimeError(f'门户子进程退出 {proc.returncode}: {err}')
-        body = Path(tmp).read_text(encoding='utf-8', errors='replace') if Path(tmp).exists() else ''
-        return parse_portal_list(feed, body)
+        data = json.loads(Path(tmp).read_text(encoding='utf-8', errors='replace')) if Path(tmp).exists() else {}
+        return parse_portal_cards(feed, data.get('cards', []))
     finally:
         try:
             os.remove(tmp)
@@ -521,16 +511,28 @@ def main():
                 it['rel'] = len(hit)
                 it['ddl'] = parse_deadline(text)
                 tk = norm_title(it['title'])
-                if tk in by_title and by_title[tk] != it['k']:
-                    continue
-                if it['k'] in by_key:
+                old_k = by_title.get(tk)
+                old = by_key.get(old_k) if old_k else None
+                if old is not None and old_k != it['k']:
+                    # 同标题不同键（如门户条目从列表回退链升级为详情链）：保留信息更全的一方
+                    better = (len(it.get('summary', '')) > len(old.get('summary', '')) or
+                              (len(it.get('summary', '')) == len(old.get('summary', '')) and it['ts'] > old['ts']))
+                    if better:
+                        by_key.pop(old_k, None)
+                        by_key[it['k']] = it
+                        by_title[tk] = it['k']
+                        fresh.append(it)
+                        kept += 1
+                elif it['k'] in by_key:
                     if it['ts'] > by_key[it['k']]['ts']:
                         by_key[it['k']] = it
+                        fresh.append(it)
+                        kept += 1
                 else:
                     by_key[it['k']] = it
                     by_title[tk] = it['k']
-                fresh.append(it)
-                kept += 1
+                    fresh.append(it)
+                    kept += 1
             print(f"  {feed['id']:14s} {len(items):3d} fetched, {kept:3d} kept")
         except Exception as e:
             errs.append({'id': feed['id'], 'name': feed['name'], 'err': str(e)[:160]})
