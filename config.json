@@ -1529,7 +1529,7 @@
     "cat": "college",
     "type": "portal",
     "url": "https://webvpn.sigs.tsinghua.edu.cn/https/77726476706e69737468656265737421e0f85388263c2643770f9ae28c462a3b9c03027879bfa2a49d2feb/sigsPortal/home?type=fs_info&lang=zh",
-    "enabled": false
+    "enabled": true
    }
   ],
   "science_terms": "protein|materials?|chemistr|physics|climate|fusion|genome|molecule|drug|medicine|biology|cell|crystal|battery|catalyst|disease|patient|ecosystem|ocean|astronomy|particle|quantum",
